@@ -1,6 +1,6 @@
 name: scansafeafrica_boards
-description: ScanSafeAfrica Stage 2 - Real GPS No Package - 50 Brands + Export
-publish_to: 'none'
+description: ScanSafeAfrica Stage 3 Fix Green
+publish_to: none
 version: 1.0.0+3
 
 environment:
