@@ -1,7 +1,7 @@
 name: scansafeafrica_boards
-description: ScanSafeAfrica
-publish_to: none
-version: 1.0.0+3
+description: ScanSafeAfrica - Stop Fake Goods - Citizen + Inspector + Board
+publish_to: 'none'
+version: 1.0.0+4
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -9,10 +9,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.5
+  geolocator: ^10.1.0
+  url_launcher: ^6.2.2
+  google_maps_flutter: ^2.5.0
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
