@@ -1,14 +1,18 @@
 name: scansafeafrica_boards
-description: ScanSafeAfrica Green Test
-publish_to: 'none'
+description: ScanSafeAfrica
+publish_to: none
 version: 1.0.0+3
+
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
+
 dependencies:
   flutter:
     sdk: flutter
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
 flutter:
   uses-material-design: true
