@@ -1,7 +1,7 @@
 name: scansafeafrica_boards
-description: ScanSafeAfrica - Stage 2 - Real GPS + 50 Brands + SAPS Export
+description: ScanSafeAfrica Stage 2 - Real GPS No Package - 50 Brands + Export
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.5
-  geolocator: ^11.0.0
 
 dev_dependencies:
   flutter_test:
