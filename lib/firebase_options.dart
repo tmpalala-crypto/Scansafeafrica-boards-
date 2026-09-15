@@ -5,7 +5,7 @@ class DefaultFirebaseOptions {
     return web;
   }
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: "AIzaSyAU9vLb2hM1pYjU2hN7yws5gIs",
+    apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     authDomain: "scansafeafrica-boards.firebaseapp.com",
     projectId: "scansafeafrica-boards",
     storageBucket: "scansafeafrica-boards.firebasestorage.app",
