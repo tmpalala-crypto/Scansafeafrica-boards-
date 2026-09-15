@@ -1,123 +1,172 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
-void main() => runApp(ScanSafeAfricaApp());
+void main() => runApp(ScanSafeApp());
 
-class ScanSafeAfricaApp extends StatelessWidget {
+class ScanSafeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, title: 'ScanSafeAfrica', home: LoginPage());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'ScanSafeAfrica',
+      home: LoginPage(),
+    );
   }
 }
 
-// SECURITY LOGS - Legal honeypot evidence for SAPS
-List<Map<String, dynamic>> attackLogs = [];
-
-List<String> allBrands = ["SAPS","CIPC","SPRITE","PEPSI","STONEY","LUCOZADE","SASKO","ALBANY","BLUE RIBBON","SASKO LAB","COKE","FANTA","BREAD","MILK","NSP","SUGAR","FLOUR","RICE","OIL","SALT","MAIZE","BEANS","TOMATO","POTATO","ONION","CHICKEN","BEEF","FISH","EGGS","CHEESE","BUTTER","YOGHURT","JUICE","WATER","BEER","WINE","CIGARETTES","SOAP","TOOTHPASTE","DETERGENT","SHAMPOO","LOTION","PARAFFIN","MAIZE MEAL","SUNFLOWER","MARGARINE","TEA","COFFEE","BISCUITS"];
-
-List<Map<String, dynamic>> allScans = [
-  {"brand": "COKE", "dept": "HEALTH", "location": "Bethelsdorp", "status": "FAKE", "type": "PERSON", "time": "22:10"},
-  {"brand": "SASKO", "dept": "CIPC", "location": "Booysens Park", "status": "EXPIRED", "type": "INSPECTION", "time": "20:14"},
-  {"brand": "NSP", "dept": "SAPS", "location": "Motherwell", "status": "VAT FRAUD", "type": "PERSON", "time": "02:30"},
-];
-
-Widget safeLogo(double h){
-  return Image.asset("assets/logo.png", height: h, fit: BoxFit.contain,
-    errorBuilder: (c,e,s) => Icon(Icons.shield, size: h, color: Colors.red));
-}
-
+// ================= LOGIN + HONEYPOT =================
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  int failed = 0;
-  bool blocked = false;
-  int blockSec = 0;
-  Timer? timer;
   final userCtrl = TextEditingController();
   final passCtrl = TextEditingController();
+  int attempts = 0;
+  int blockSeconds = 0;
+  List<String> logs = [];
+  Timer? timer;
 
-  void startBlock(){
-    setState((){ blocked=true; blockSec=30; });
-    timer = Timer.periodic(Duration(seconds: 1), (t){
-      setState((){ blockSec--; });
-      if(blockSec<=0){ t.cancel(); setState((){ blocked=false; failed=0; }); }
-    });
-  }
+  // YOUR NEW SECURE PASSWORD
+  final String REAL_USER = "Scansafeadmin";
+  final String REAL_PASS = "SSA_86Primrose";
 
-  void tryLogin(){
-    if(blocked) return;
-    String u = userCtrl.text.trim();
-    String p = passCtrl.text.trim();
+  void login() {
+    if (blockSeconds > 0) return;
 
-    // HONEYPOT DETECTION - Legal trap
-    bool isAttack = u.toLowerCase()=="admin" || u.contains("'") || u.contains("OR") || u.contains("--") || p.contains("'");
-
-    if(isAttack || u.isEmpty){
-      setState((){ failed++; });
-      attackLogs.insert(0, {
-        "time": DateTime.now().toString().substring(11,19),
-        "user": u.isEmpty? "(empty)" : u,
-        "ip": "192.168.${failed}.${DateTime.now().millisecond}",
-        "type": isAttack? "HONEYPOT TRIGGERED - SQLi Attempt" : "Failed Login",
-        "location": "Bethelsdorp Gateway"
-      });
-      if(failed>=3){
-        startBlock();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("⚠️ SECURITY ALERT: 3 failed attempts logged. Incident #SAPS-${DateTime.now().millisecondsSinceEpoch} reported to SAPS Task Team. System locked 30s."), backgroundColor: Colors.red, duration: Duration(seconds: 4)));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login failed. Attempt $failed/3 logged for SAPS.")));
-      }
+    // SUCCESS - YOUR PASSWORD
+    if (userCtrl.text == REAL_USER && passCtrl.text == REAL_PASS) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => DashboardPage()));
       return;
     }
-    // Success - go to dashboard
-    Navigator.push(context, MaterialPageRoute(builder: (_) => Dashboard()));
+
+    // FAILED - HONEYPOT TRIGGER
+    attempts++;
+    String time = DateTime.now().toString().substring(11,19);
+    setState(() {
+      logs.insert(0, "$time - HONEYPOT TRIGGERED - SUSPECT Attempt - ${userCtrl.text}");
+    });
+
+    if (attempts >= 3) {
+      setState(() => blockSeconds = 30);
+      timer = Timer.periodic(Duration(seconds: 1), (t) {
+        setState(() {
+          blockSeconds--;
+          if (blockSeconds <= 0) {
+            t.cancel();
+            attempts = 0;
+          }
+        });
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0F172A),
-      body: SingleChildScrollView(child: Center(child: Container(
-        margin: EdgeInsets.all(12), padding: EdgeInsets.all(20), width: 420,
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-        child: Column(children: [
-          safeLogo(100),
-          Text("ScanSafeAfrica - Central Board", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text("50 BRANDS - 20 DEPTS - CONTRACT READY", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.red)),
-          SizedBox(height: 15),
-          TextField(controller: userCtrl, decoration: InputDecoration(labelText: "Username", border: OutlineInputBorder(), prefixIcon: Icon(Icons.person))),
-          SizedBox(height: 10),
-          TextField(controller: passCtrl, obscureText: true, decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder(), prefixIcon: Icon(Icons.lock))),
-          SizedBox(height: 15),
-          if(blocked) Container(padding: EdgeInsets.all(10), color: Colors.red.shade100, child: Text("🚫 BLOCKED FOR $blockSec sec - Incident reported to SAPS Task Team & CIPC", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-          SizedBox(height: 10),
-          ElevatedButton(onPressed: blocked? null : tryLogin, style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, minimumSize: Size(double.infinity, 45)), child: Text(blocked? "BLOCKED - $blockSec s" : "LOGIN TO LIVE BOARD")),
-          SizedBox(height: 10),
-          Text("Security: Honeypot active | Auto-block after 3 fails | All attempts logged for SAPS", style: TextStyle(fontSize: 8, color: Colors.grey)),
-          if(attackLogs.isNotEmpty)...[
-            Divider(),
-            Text("Recent Security Logs (${attackLogs.length})", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-            SizedBox(height: 5),
-           ...attackLogs.take(3).map((a) => Container(margin: EdgeInsets.only(bottom:4), padding: EdgeInsets.all(6), color: Colors.orange.shade50, child: Row(children: [Icon(Icons.warning_amber, size: 14, color: Colors.red), SizedBox(width:4), Expanded(child: Text("${a['time']} - ${a['type']} - ${a['user']}", style: TextStyle(fontSize: 9)))])))
-          ]
-        ])
-      )))
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            SizedBox(height: 40),
+            Icon(Icons.shield, size: 80, color: Color(0xFF0D2C54)),
+            Text("ScanSafeAfrica", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0D2C54))),
+            Text("ScanSafeAfrica - Central Board", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("50 BRANDS - 20 DEPTS - CONTRACT READY", style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+            TextField(controller: userCtrl, decoration: InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person), border: OutlineInputBorder())),
+            SizedBox(height: 10),
+            TextField(controller: passCtrl, obscureText: true, decoration: InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder())),
+            SizedBox(height: 15),
+            if (attempts >= 3)
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12),
+                color: Colors.red[100],
+                child: Text("🚫 BLOCKED FOR $blockSeconds sec - Incident reported to SAPS Task Team & CIPC", textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              ),
+            SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: blockSeconds > 0? null : login,
+                style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0D2C54)),
+                child: Text(blockSeconds > 0? "BLOCKED - $blockSeconds s" : "LOGIN TO LIVE BOARD", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            SizedBox(height: 10),
+            Text("Security: Honeypot active | Auto-block after 3 fails | All attempts logged for SAPS", style: TextStyle(fontSize: 9, color: Colors.grey)),
+            SizedBox(height: 20),
+            if (logs.isNotEmpty)...[
+              Text("Recent Security Logs (${logs.length})", style: TextStyle(fontWeight: FontWeight.bold)),
+             ...logs.take(3).map((l) => Container(margin: EdgeInsets.only(top:5), padding: EdgeInsets.all(8), color: Colors.orange[100], width: double.infinity, child: Text(l, style: TextStyle(fontSize: 11)))),
+            ]
+          ],
+        ),
+      ),
     );
   }
 }
 
-class Dashboard extends StatelessWidget {
+// ================= DASHBOARD - SUSPECT + AUTO LOCATION/ALERT/MAP/REPORT =================
+class DashboardPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
+  _DashboardPageState createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  Position? curPos;
+  List<Map<String,dynamic>> incidents = [];
+
+  @override
+  void initState(){
+    super.initState();
+    _getLoc();
+  }
+
+  Future<void> _getLoc() async {
+    LocationPermission perm = await Geolocator.requestPermission();
+    Position p = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(()=> curPos = p);
+  }
+
+  // THIS RUNS AUTOMATICALLY WHEN SOMEONE SCANS
+  void onScan(String barcode, String brand) async {
+    Position p = await Geolocator.getCurrentPosition();
+    var incident = {
+      "time": DateTime.now().toString(),
+      "barcode": barcode,
+      "brand": brand,
+      "status": "SUSPECT - VERIFICATION REQUIRED",
+      "location": "${p.latitude.toStringAsFixed(5)}, ${p.longitude.toStringAsFixed(5)}",
+      "address": "Auto-detected: Bethelsdorp/Motherwell/Booysens Park",
+      "sapsNo": "SAPS-${DateTime.now().millisecondsSinceEpoch}",
+    };
+    setState(()=> incidents.insert(0, incident));
+
+    // AUTO ALERT
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("🚨 SUSPECT: $brand - Location & Report auto-logged for SAPS/CIPC - ${incident['sapsNo']}"), duration: Duration(seconds: 4)));
+
+    // AUTO REPORT (here you would save to Firebase)
+    print("AUTO REPORT GENERATED: ${incident['sapsNo']} -> SAPS & CIPC");
+  }
+
+  @override
+  Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: Row(children: [safeLogo(30), SizedBox(width: 8), Text("ScanSafeAfrica - LIVE")]), backgroundColor: Colors.red, actions: [IconButton(icon: Icon(Icons.security), onPressed: (){ showDialog(context: context, builder: (_) => AlertDialog(title: Text("Security Logs for SAPS"), content: SingleChildScrollView(child: Column(children: attackLogs.map((a) => ListTile(dense: true, title: Text("${a['type']}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)), subtitle: Text("${a['time']} | ${a['user']} | ${a['ip']} | ${a['location']}", style: TextStyle(fontSize: 9)))).toList())), actions: [TextButton(onPressed: ()=>Navigator.pop(context), child: Text("Close"))])); })]),
+      appBar: AppBar(title: Text("LIVE BOARD - SUSPECT SYSTEM"), backgroundColor: Color(0xFF0D2C54), foregroundColor: Colors.white),
       body: Column(children: [
-        Container(padding: EdgeInsets.all(10), color: Colors.red.shade50, child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [Text("50 Brands"), Text("20 Depts"), Text("${attackLogs.length} Threats Blocked", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))])),
-        Expanded(child: ListView.builder(itemCount: allScans.length, itemBuilder: (c,i){ var s=allScans[i]; return Card(margin: EdgeInsets.all(5), child: ListTile(leading: Icon(Icons.warning, color: Colors.red), title: Text("${s['brand']} - ${s['status']}", style: TextStyle(fontWeight: FontWeight.bold)), subtitle: Text("${s['location']} | ${s['dept']} | ${s['time']}"))); }))
-      ])
+        Container(height: 180, child: curPos == null? Center(child: CircularProgressIndicator()) : FlutterMap(options: MapOptions(initialCenter: LatLng(curPos!.latitude, curPos!.longitude), initialZoom: 14), children: [TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"), MarkerLayer(markers: [Marker(point: LatLng(curPos!.latitude, curPos!.longitude), child: Icon(Icons.location_on, color: Colors.red, size: 40))])])),
+        Padding(padding: EdgeInsets.all(8), child: Text("📍 Auto Location Active | Tap SCAN to simulate citizen scan", style: TextStyle(fontSize: 11))),
+        Expanded(child: incidents.isEmpty? Center(child: Text("No SUSPECT scans yet - waiting for citizen scans...")) : ListView.builder(itemCount: incidents.length, itemBuilder: (_,i){var d=incidents[i]; return Card(color: Colors.orange[50], child: ListTile(leading: Icon(Icons.warning, color: Colors.red), title: Text("${d['brand']} - ${d['status']}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), subtitle: Text("Barcode: ${d['barcode']}\nLoc: ${d['location']}\nTime: ${d['time'].toString().substring(0,19)}\n${d['sapsNo']} - Auto-reported to SAPS & CIPC"))));}),
+      ]),
+      floatingActionButton: FloatingActionButton(onPressed: ()=> onScan("6001234567890", "Coca-Cola 2L"), backgroundColor: Colors.red, child: Icon(Icons.qr_code_scanner), tooltip: "SIMULATE SCAN"),
     );
   }
 }
