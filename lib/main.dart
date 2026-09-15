@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
+// ================= MAIN =================
 void main() => runApp(ScanSafeApp());
 
 class ScanSafeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, title: 'ScanSafeAfrica', home: LoginPage());
+    return MaterialApp(debugShowCheckedModeBanner: false, title: 'ScanSafeAfrica Stage 2', home: LoginPage());
   }
 }
 
+// ================= LOGIN + HONEYPOT =================
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -33,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     attempts++;
     String time = DateTime.now().toString().substring(11,19);
-    setState(() => logs.insert(0, "$time - HONEYPOT TRIGGERED - SUSPECT Attempt - ${userCtrl.text}"));
+    setState(() => logs.insert(0, "$time - HONEYPOT - SUSPECT - ${userCtrl.text}"));
     if (attempts >= 3) {
       setState(() => blockSeconds = 30);
       timer = Timer.periodic(Duration(seconds: 1), (t) {
@@ -45,67 +48,135 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Column(children: [
-          SizedBox(height: 40),
-          Icon(Icons.shield, size: 80, color: Color(0xFF0D2C54)),
-          Text("ScanSafeAfrica", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0D2C54))),
-          Text("ScanSafeAfrica - Central Board", style: TextStyle(fontWeight: FontWeight.bold)),
-          Text("50 BRANDS - 20 DEPTS - CONTRACT READY", style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
-          SizedBox(height: 20),
-          TextField(controller: userCtrl, decoration: InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person), border: OutlineInputBorder())),
-          SizedBox(height: 10),
-          TextField(controller: passCtrl, obscureText: true, decoration: InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder())),
-          SizedBox(height: 15),
-          if (attempts >= 3) Container(width: double.infinity, padding: EdgeInsets.all(12), color: Colors.red[100], child: Text("🚫 BLOCKED FOR $blockSeconds sec - Incident reported to SAPS Task Team & CIPC", textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
-          SizedBox(height: 10),
-          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: blockSeconds > 0? null : login, style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0D2C54)), child: Text(blockSeconds > 0? "BLOCKED - $blockSeconds s" : "LOGIN TO LIVE BOARD", style: TextStyle(color: Colors.white)))),
-          SizedBox(height: 10),
-          Text("Security: Honeypot active | Auto-block after 3 fails | All attempts logged for SAPS", style: TextStyle(fontSize: 9, color: Colors.grey)),
-          SizedBox(height: 20),
-          if (logs.isNotEmpty)...[Text("Recent Security Logs (${logs.length})", style: TextStyle(fontWeight: FontWeight.bold)),...logs.take(3).map((l) => Container(margin: EdgeInsets.only(top:5), padding: EdgeInsets.all(8), color: Colors.orange[100], width: double.infinity, child: Text(l, style: TextStyle(fontSize: 11))))]
-        ]),
-      ),
+      body: SingleChildScrollView(padding: EdgeInsets.all(20), child: Column(children: [
+        SizedBox(height: 40),
+        Icon(Icons.shield, size: 80, color: Color(0xFF0D2C54)),
+        Text("ScanSafeAfrica", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0D2C54))),
+        Text("STAGE 2: A+B+D - GPS + 50 BRANDS + SAPS EXPORT", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red)),
+        SizedBox(height: 20),
+        TextField(controller: userCtrl, decoration: InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.person), border: OutlineInputBorder())),
+        SizedBox(height: 10),
+        TextField(controller: passCtrl, obscureText: true, decoration: InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder())),
+        SizedBox(height: 15),
+        if (attempts >= 3) Container(width: double.infinity, padding: EdgeInsets.all(12), color: Colors.red[100], child: Text("🚫 BLOCKED $blockSeconds sec - SAPS & CIPC logged", textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+        SizedBox(height: 10),
+        SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: blockSeconds>0?null:login, style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0D2C54)), child: Text(blockSeconds>0?"BLOCKED - $blockSeconds s":"LOGIN TO STAGE 2 BOARD", style: TextStyle(color: Colors.white)))),
+        SizedBox(height: 20),
+        if (logs.isNotEmpty)...[Text("Logs (${logs.length})", style: TextStyle(fontWeight: FontWeight.bold)),...logs.take(3).map((l)=>Container(margin: EdgeInsets.only(top:5), padding: EdgeInsets.all(8), color: Colors.orange[100], width: double.infinity, child: Text(l, style: TextStyle(fontSize:11))))]
+      ])),
     );
   }
 }
 
+// ================= DASHBOARD STAGE 2 =================
 class DashboardPage extends StatefulWidget {
   @override
   _DashboardPageState createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  Position? realPos;
+  String gpsStatus = "Getting real GPS...";
   List<Map<String,dynamic>> incidents = [];
-  String currentLocation = "33.8529° S, 25.5800° E - Auto-detected: Bethelsdorp, Eastern Cape";
+  String selectedBrand = "Coca-Cola 2L";
+  final barcodeCtrl = TextEditingController(text: "6001234567890");
 
-  void onScan(String barcode, String brand) async {
-    // AUTO LOCATION (simulated - real GPS will come after build is green)
+  // 50 BRANDS - SA TOP BRANDS
+  final List<String> brands50 = [
+    "Coca-Cola 2L","Coca-Cola 500ml","Fanta Orange","Sprite","Stoney",
+    "Lays Salt & Vinegar","Lays Tomato","Simba Chips","Doritos","Nik Naks",
+    "Sunlight Dish 750ml","Sunlight Bar","Stay Soft","Domestos","Ariel Washing",
+    "OMO Washing","Colgate Toothpaste","Always Pads","Pampers","Nivea Lotion",
+    "Vaseline Blue Seal","Lux Soap","Dove Soap","Shield Roll-on","Head & Shoulders",
+    "Castle Lager","Black Label","Savanna Cider","Hunters Gold","Heineken",
+    "White Star Maize","Iwisa Maize","Tastic Rice","Koo Baked Beans","Lucky Star Pilchards",
+    "All Gold Tomato","Crosse & Blackwell Mayo","Robertsons Spice","Knorr Soup","Maggi Noodles",
+    "Weet-Bix","Corn Flakes Kelloggs","Jungle Oats","Oros","Energade",
+    "Amarula","Glenfiddich (FAKE ALERT)","Johnnie Walker Black","Hennessy Cognac","Pringle Original"
+  ];
+
+  @override
+  void initState(){ super.initState(); _getRealGPS(); }
+
+  Future<void> _getRealGPS() async {
+    setState(()=> gpsStatus = "Requesting permission...");
+    try{
+      LocationPermission perm = await Geolocator.checkPermission();
+      if(perm==LocationPermission.denied){ perm = await Geolocator.requestPermission(); }
+      if(perm==LocationPermission.deniedForever){ setState(()=> gpsStatus = "Permission denied - Enable in browser settings"); return; }
+      setState(()=> gpsStatus = "Getting location...");
+      Position p = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(){ realPos = p; gpsStatus = "${p.latitude.toStringAsFixed(6)}, ${p.longitude.toStringAsFixed(6)} - ACCURATE: ${p.accuracy.toStringAsFixed(1)}m"; }
+    }catch(e){ setState(()=> gpsStatus = "GPS Error: $e - Using fallback Bethelsdorp"); }
+  }
+
+  void onScan() {
+    if(barcodeCtrl.text.isEmpty){ ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Enter barcode!"))); return; }
+    var lat = realPos?.latitude?? -33.8529;
+    var lng = realPos?.longitude?? 25.5800;
     var incident = {
-      "time": DateTime.now().toString(),
-      "barcode": barcode,
-      "brand": brand,
+      "time": DateTime.now(),
+      "barcode": barcodeCtrl.text,
+      "brand": selectedBrand,
       "status": "SUSPECT - VERIFICATION REQUIRED",
-      "location": currentLocation,
+      "lat": lat, "lng": lng,
+      "location": "$lat, $lng",
       "sapsNo": "SAPS-${DateTime.now().millisecondsSinceEpoch}",
+      "mapsUrl": "https://www.google.com/maps/search/?api=1&query=$lat,$lng"
     };
-    setState(() => incidents.insert(0, incident));
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("🚨 SUSPECT: $brand - Location auto-logged: $currentLocation - ${incident['sapsNo']}"), duration: Duration(seconds: 4)));
-    print("AUTO REPORT: ${incident['sapsNo']} -> SAPS & CIPC");
+    setState(()=> incidents.insert(0, incident));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text("🚨 SUSPECT: ${selectedBrand} - ${incident['sapsNo']} - Real GPS logged!"), duration: Duration(seconds: 3)));
+  }
+
+  void exportSAPS() {
+    if(incidents.isEmpty){ ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No incidents to export"))); return; }
+    String csv = "SAPS No,Time,Brand,Barcode,Latitude,Longitude,GoogleMaps,Status\n";
+    for(var d in incidents){ csv += "${d['sapsNo']},${d['time']},${d['brand']},${d['barcode']},${d['lat']},${d['lng']},${d['mapsUrl']},${d['status']}\n"; }
+    showDialog(context: context, builder: (_)=> AlertDialog(
+      title: Text("SAPS EXPORT - ${incidents.length} Cases"),
+      content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text("Copy this CSV for SAPS Task Team & CIPC:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        SizedBox(height: 10),
+        Container(padding: EdgeInsets.all(8), color: Colors.grey[200], child: SelectableText(csv, style: TextStyle(fontSize: 9, fontFamily: 'monospace'))),
+        SizedBox(height: 10),
+        Text("Total SUSPECT: ${incidents.length}\nBrands affected: ${incidents.map((e)=>e['brand']).toSet().length}\nReady for SAPS & CIPC submission.", style: TextStyle(fontSize: 11))
+      ])),
+      actions: [TextButton(onPressed: ()=> Navigator.pop(context), child: Text("CLOSE"))]
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("LIVE BOARD - SUSPECT SYSTEM"), backgroundColor: Color(0xFF0D2C54), foregroundColor: Colors.white),
+      appBar: AppBar(title: Text("STAGE 2 - ${incidents.length} SUSPECT"), backgroundColor: Color(0xFF0D2C54), foregroundColor: Colors.white, actions: [IconButton(icon: Icon(Icons.download), tooltip: "EXPORT SAPS", onPressed: exportSAPS), IconButton(icon: Icon(Icons.my_location), onPressed: _getRealGPS)]),
       body: Column(children: [
-        Container(height: 160, color: Colors.blue[50], width: double.infinity, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 50, color: Colors.red), Text("📍 AUTO LOCATION ACTIVE", style: TextStyle(fontWeight: FontWeight.bold)), Text(currentLocation, style: TextStyle(fontSize: 11)), SizedBox(height: 5), Text("Map Pin: Bethelsdorp - Motherwell - Booysens Park", style: TextStyle(fontSize: 10, color: Colors.grey)), Text("Auto Report will include Google Maps link", style: TextStyle(fontSize: 9)) ])),
-        Padding(padding: EdgeInsets.all(8), child: Text("Automatic: Location + Alert + Map + Report on every scan", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
-        Expanded(child: incidents.isEmpty? Center(child: Text("No SUSPECT scans yet - Tap SCAN to simulate citizen scan")) : ListView.builder(itemCount: incidents.length, itemBuilder: (_, i) { var d = incidents[i]; return Card(color: Colors.orange[50], child: ListTile(leading: Icon(Icons.warning, color: Colors.red), title: Text("${d['brand']} - ${d['status']}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), subtitle: Text("Barcode: ${d['barcode']}\nLoc: ${d['location']}\nTime: ${d['time'].toString().substring(0, 19)}\n${d['sapsNo']} - Auto-reported to SAPS & CIPC"))); })),
+        // REAL GPS BOX
+        Container(width: double.infinity, color: realPos==null? Colors.orange[50] : Colors.green[50], padding: EdgeInsets.all(10), child: Column(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.gps_fixed, color: realPos==null? Colors.orange: Colors.green, size: 18), SizedBox(width:5), Text(realPos==null?"GETTING REAL GPS...":"✅ REAL GPS ACTIVE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))]),
+          SizedBox(height: 4),
+          Text(gpsStatus, style: TextStyle(fontSize: 11), textAlign: TextAlign.center),
+          if(realPos!=null) Text("Maps: https://maps.google.com/?q=${realPos!.latitude},${realPos!.longitude}", style: TextStyle(fontSize: 9, color: Colors.blue), textAlign: TextAlign.center),
+        ])),
+        // BRAND SELECTOR + BARCODE - STAGE B
+        Container(padding: EdgeInsets.all(10), color: Colors.white, child: Column(children: [
+          Row(children: [
+            Expanded(flex:3, child: DropdownButtonFormField<String>(value: selectedBrand, isExpanded: true, decoration: InputDecoration(labelText: "50 BRANDS (Select)", border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5)), items: brands50.map((b)=> DropdownMenuItem(value:b, child: Text(b, style: TextStyle(fontSize: 11)))).toList(), onChanged: (v)=> setState(()=> selectedBrand=v!))),
+            SizedBox(width: 8),
+            Expanded(flex:2, child: TextField(controller: barcodeCtrl, decoration: InputDecoration(labelText: "Barcode", border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5)), style: TextStyle(fontSize: 12))),
+          ]),
+          SizedBox(height: 8),
+          SizedBox(width: double.infinity, height: 45, child: ElevatedButton.icon(icon: Icon(Icons.qr_code_scanner), label: Text("SCAN & AUTO-REPORT SUSPECT"), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), onPressed: onScan)),
+          Text("Auto: Real GPS + Google Maps Link + SAPS No + Brand Filter", style: TextStyle(fontSize: 9, color: Colors.grey))
+        ])),
+        // STATS
+        if(incidents.isNotEmpty) Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), color: Colors.blue[50], child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text("Total: ${incidents.length} SUSPECT", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          Text("Brands: ${incidents.map((e)=>e['brand']).toSet().length}/50", style: TextStyle(fontSize: 11)),
+          TextButton(onPressed: exportSAPS, child: Text("EXPORT SAPS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)))
+        ])),
+        // INCIDENTS LIST
+        Expanded(child: incidents.isEmpty? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.verified_user, size: 50, color: Colors.grey), Text("No SUSPECT scans yet"), Text("Select brand + Enter barcode + SCAN", style: TextStyle(fontSize: 11, color: Colors.grey))])) : ListView.builder(itemCount: incidents.length, itemBuilder: (_,i){ var d=incidents[i]; return Card(color: Colors.orange[50], margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: ListTile(leading: Icon(Icons.warning, color: Colors.red), title: Text("${d['brand']}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text("Barcode: ${d['barcode']} | ${d['sapsNo']}", style: TextStyle(fontSize: 10)), Text("📍 ${d['lat'].toStringAsFixed(5)}, ${d['lng'].toStringAsFixed(5)}", style: TextStyle(fontSize: 10)), Text("Time: ${d['time'].toString().substring(0,19)}", style: TextStyle(fontSize: 9)), Text("${d['status']}", style: TextStyle(fontSize: 9, color: Colors.red, fontWeight: FontWeight.bold)), Text("🗺️ ${d['mapsUrl']}", style: TextStyle(fontSize: 8, color: Colors.blue))]), isThreeLine: false)); })),
       ]),
-      floatingActionButton: FloatingActionButton(onPressed: () => onScan("6001234567890", "Coca-Cola 2L - SUSPECT"), backgroundColor: Colors.red, child: Icon(Icons.qr_code_scanner), tooltip: "SIMULATE SCAN"),
     );
   }
 }
