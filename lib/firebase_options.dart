@@ -1,11 +1,9 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
-    return web;
-  }
+  static FirebaseOptions get currentPlatform => web;
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    apiKey: "AIzaSyAU9vLb2hM1pYjU2hN7yws5gIsmXa4Q9v2pL1eR8tY0uI3o",
     authDomain: "scansafeafrica-boards.firebaseapp.com",
     projectId: "scansafeafrica-boards",
     storageBucket: "scansafeafrica-boards.firebasestorage.app",
