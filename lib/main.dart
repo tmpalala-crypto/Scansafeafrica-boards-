@@ -1,163 +1,208 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(ScanSafeAfricaApp());
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint("Firebase init error: $e");
+  }
+  runApp(const MyApp());
 }
 
-class ScanSafeAfricaApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ScanSafeAfrica',
       debugShowCheckedModeBanner: false,
+      title: 'ScanSafeAfrica',
       theme: ThemeData(primarySwatch: Colors.green),
-      home: MainSelector(),
+      home: const MainNav(),
     );
   }
 }
 
-class MainSelector extends StatefulWidget {
+class MainNav extends StatefulWidget {
+  const MainNav({super.key});
   @override
-  _MainSelectorState createState() => _MainSelectorState();
+  State<MainNav> createState() => _MainNavState();
 }
 
-class _MainSelectorState extends State<MainSelector> {
-  int selectedIndex = 0;
-  final screens = [CitizenScanFirebase(), InspectorFirebase(), AdminBoardFirebase()];
+class _MainNavState extends State<MainNav> {
+  int _index = 0;
+  final _pages = [const PplScanPage(), const InspectionPage(), const BoardPage()];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: screens[selectedIndex],
+      body: _pages[_index],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (i) => setState(() => selectedIndex = i),
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
         selectedItemColor: Colors.green,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: "PPL SCAN"),
-          BottomNavigationBarItem(icon: Icon(Icons.verified_user), label: "INSPECTION"),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "BOARD"),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: 'PPL SCAN'),
+          BottomNavigationBarItem(icon: Icon(Icons.verified_user), label: 'INSPECTION'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'BOARD'),
         ],
       ),
     );
   }
 }
 
-class CitizenScanFirebase extends StatefulWidget {
+// ================= PPL SCAN =================
+class PplScanPage extends StatefulWidget {
+  const PplScanPage({super.key});
   @override
-  _CitizenScanFirebaseState createState() => _CitizenScanFirebaseState();
+  State<PplScanPage> createState() => _PplScanPageState();
 }
 
-class _CitizenScanFirebaseState extends State<CitizenScanFirebase> {
-  final brandController = TextEditingController();
-  final shopController = TextEditingController();
-  final latController = TextEditingController();
-  final lngController = TextEditingController();
+class _PplScanPageState extends State<PplScanPage> {
+  final brandCtrl = TextEditingController();
+  final shopCtrl = TextEditingController();
+  String lat = "";
+  String lng = "";
+  String status = "Ready to scan";
   bool loading = false;
 
   Future<void> getLocation() async {
-    setState(()=>loading=true);
-    try{
-      LocationPermission p = await Geolocator.checkPermission();
-      if(p==LocationPermission.denied) p = await Geolocator.requestPermission();
+    setState(() { loading = true; status = "Getting GPS..."; });
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) { setState(() { status = "Please turn ON location"; loading = false; }); return; }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.deniedForever) { setState(() { status = "Location denied forever"; loading = false; }); return; }
       Position pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      setState((){
-        latController.text = pos.latitude.toString();
-        lngController.text = pos.longitude.toString();
-        loading=false;
+      setState(() { lat = pos.latitude.toString(); lng = pos.longitude.toString(); status = "GPS Locked!"; loading = false; });
+    } catch (e) {
+      setState(() { status = "GPS Error: $e"; loading = false; });
+    }
+  }
+
+  Future<void> saveToFirebase() async {
+    if (brandCtrl.text.isEmpty || shopCtrl.text.isEmpty) { setState(() => status = "Fill Brand & Shop!"); return; }
+    if (lat.isEmpty) { setState(() => status = "Get Location first!"); return; }
+    setState(() { loading = true; status = "Saving to cloud..."; });
+    try {
+      await FirebaseFirestore.instance.collection('reports').add({
+        'brand': brandCtrl.text.trim(),
+        'shop': shopCtrl.text.trim(),
+        'latitude': lat,
+        'longitude': lng,
+        'mapLink': "https://maps.google.com/?q=$lat,$lng",
+        'timestamp': FieldValue.serverTimestamp(),
+        'result': 'FAKE - ScanSafeAfrica',
       });
-    }catch(e){ setState(()=>loading=false); }
+      setState(() { status = "✅ SAVED TO CLOUD FOREVER!"; loading = false; });
+      brandCtrl.clear(); shopCtrl.clear();
+    } catch (e) {
+      setState(() { status = "Firebase Error: $e\nCheck Firestore Rules!"; loading = false; });
+    }
   }
 
-  Future<void> submitReport() async {
-    if(brandController.text.isEmpty) return;
-    await FirebaseFirestore.instance.collection('scansafrica_reports').add({
-      "brand": brandController.text,
-      "shop": shopController.text,
-      "lat": latController.text,
-      "lng": lngController.text,
-      "time": DateTime.now().toString(),
-      "status": "PENDING",
-      "town": "Bethelsdorp, EC"
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("SAVED TO CLOUD FOREVER!"), backgroundColor: Colors.green));
-    brandController.clear(); shopController.clear();
-  }
-
-  void sendWhatsApp(){
-    final msg = "*SCANSAFEAFRICA FAKE*%0ABrand: ${brandController.text}%0AShop: ${shopController.text}%0AGPS: ${latController.text},${lngController.text}%0AMap: https://maps.google.com/?q=${latController.text},${lngController.text}";
-    launchUrl(Uri.parse("https://wa.me/27815555555?text=$msg"), mode: LaunchMode.externalApplication);
+  Future<void> sendWhatsApp() async {
+    if (lat.isEmpty) { setState(() => status = "Get Location first!"); return; }
+    String msg = "🚨 SCANSAFEAFRICA FAKE ALERT 🚨\n\nBrand: ${brandCtrl.text}\nShop: ${shopCtrl.text}\nGPS: $lat, $lng\nMap: https://maps.google.com/?q=$lat,$lng\n\nSent from Bethelsdorp";
+    final url = Uri.parse("https://wa.me/?text=${Uri.encodeComponent(msg)}");
+    if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("CITIZEN SCAN - FIREBASE LIVE"), backgroundColor: Colors.green),
-      body: SingleChildScrollView(padding: EdgeInsets.all(20), child: Column(children: [
-        Icon(Icons.cloud_done, size:80, color: Colors.green),
-        Text("Firebase Connected!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        SizedBox(height:15),
-        ElevatedButton(onPressed: loading?null:getLocation, style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: Size(double.infinity,50)), child: Text(loading?"GETTING GPS...":"📍 GET MY LOCATION", style: TextStyle(color: Colors.white))),
-        SizedBox(height:10),
-        TextField(controller: latController, decoration: InputDecoration(labelText: "Latitude", border: OutlineInputBorder())),
-        SizedBox(height:10),
-        TextField(controller: lngController, decoration: InputDecoration(labelText: "Longitude", border: OutlineInputBorder())),
-        SizedBox(height:10),
-        TextField(controller: brandController, decoration: InputDecoration(labelText: "Brand", border: OutlineInputBorder())),
-        SizedBox(height:10),
-        TextField(controller: shopController, decoration: InputDecoration(labelText: "Shop Name", border: OutlineInputBorder())),
-        SizedBox(height:20),
-        ElevatedButton(onPressed: submitReport, style: ElevatedButton.styleFrom(backgroundColor: Colors.green, minimumSize: Size(double.infinity,50)), child: Text("☁️ SAVE TO FIREBASE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-        SizedBox(height:10),
-        ElevatedButton(onPressed: sendWhatsApp, style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF25D366), minimumSize: Size(double.infinity,50)), child: Text("📲 SEND SAPS WHATSAPP", style: TextStyle(color: Colors.white))),
-      ])),
+      appBar: AppBar(title: const Text("PPL SCAN - CITIZEN"), backgroundColor: Colors.green),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(controller: brandCtrl, decoration: const InputDecoration(labelText: "Brand Name (e.g. Coke)", border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: shopCtrl, decoration: const InputDecoration(labelText: "Shop Name (e.g. Spar Bethelsdorp)", border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(onPressed: loading ? null : getLocation, icon: const Icon(Icons.my_location), label: const Text("📍 GET MY LOCATION"), style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50))),
+            const SizedBox(height: 12),
+            if (lat.isNotEmpty) Container(padding: const EdgeInsets.all(12), color: Colors.green.shade50, child: Column(children: [Text("Lat: $lat"), Text("Lng: $lng"), SelectableText("https://maps.google.com/?q=$lat,$lng")])),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: loading ? null : saveToFirebase, style: ElevatedButton.styleFrom(backgroundColor: Colors.green, minimumSize: const Size(double.infinity, 50)), child: const Text("☁️ SAVE TO FIREBASE", style: TextStyle(color: Colors.white))),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: sendWhatsApp, style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, minimumSize: const Size(double.infinity, 50)), child: const Text("💬 SEND WHATSAPP TO SAPS", style: TextStyle(color: Colors.white))),
+            const SizedBox(height: 16),
+            Text(status, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class InspectorFirebase extends StatelessWidget {
+// ================= INSPECTION =================
+class InspectionPage extends StatelessWidget {
+  const InspectionPage({super.key});
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("INSPECTION - LIVE FIREBASE"), backgroundColor: Colors.orange),
+      appBar: AppBar(title: const Text("INSPECTION - LIVE"), backgroundColor: Colors.orange),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('scansafrica_reports').orderBy('time', descending: true).snapshots(),
-        builder: (ctx, snap){
-          if(!snap.hasData) return Center(child: CircularProgressIndicator());
-          var docs = snap.data!.docs;
-          if(docs.isEmpty) return Center(child: Text("No reports yet - Scan first!"));
-          return ListView.builder(itemCount: docs.length, itemBuilder: (c,i){
-            var r = docs[i].data() as Map<String,dynamic>;
-            return Card(margin: EdgeInsets.all(8), child: ListTile(title: Text("${r['brand']} @ ${r['shop']}"), subtitle: Text("GPS: ${r['lat']}, ${r['lng']}\n${r['time']}\nStatus: ${r['status']}"), trailing: Icon(Icons.check_circle, color: Colors.green),));
-          });
+        stream: FirebaseFirestore.instance.collection('reports').orderBy('timestamp', descending: true).snapshots(),
+        builder: (context, snap) {
+          if (snap.hasError) return Center(child: Text("Error: ${snap.error}\n\nFix Firestore Rules!"));
+          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (snap.data!.docs.isEmpty) return const Center(child: Text("No reports yet.\nScan something!"));
+          return ListView.builder(
+            itemCount: snap.data!.docs.length,
+            itemBuilder: (c, i) {
+              var d = snap.data!.docs[i];
+              var data = d.data() as Map<String, dynamic>;
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  title: Text("${data['brand']} @ ${data['shop']}"),
+                  subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text("GPS: ${data['latitude']}, ${data['longitude']}"),
+                    InkWell(onTap: () async { final url = Uri.parse(data['mapLink'] ?? "https://maps.google.com/?q=${data['latitude']},${data['longitude']}"); if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication); }, child: const Text("📍 Open in Google Maps", style: TextStyle(color: Colors.blue))),
+                  ]),
+                  trailing: Text(data['result'] ?? "FAKE"),
+                ),
+              );
+            },
+          );
         },
       ),
     );
   }
 }
 
-class AdminBoardFirebase extends StatelessWidget {
+// ================= BOARD =================
+class BoardPage extends StatelessWidget {
+  const BoardPage({super.key});
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("BOARD - ADMIN LIVE"), backgroundColor: Colors.black87),
+      appBar: AppBar(title: const Text("BOARD - ADMIN LIVE"), backgroundColor: Colors.blue),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('scansafrica_reports').orderBy('time', descending: true).snapshots(),
-        builder: (ctx, snap){
-          if(!snap.hasData) return Center(child: CircularProgressIndicator());
-          return Column(children: [
-            Container(color: Colors.black, padding: EdgeInsets.all(15), width: double.infinity, child: Text("TOTAL REPORTS: ${snap.data!.docs.length} | LIVE FROM FIREBASE", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))),
-            Expanded(child: ListView.builder(itemCount: snap.data!.docs.length, itemBuilder: (c,i){
-              var r = snap.data!.docs[i].data() as Map<String,dynamic>;
-              return ListTile(leading: Icon(Icons.location_on, color: Colors.red), title: Text("${r['brand']} - ${r['shop']}"), subtitle: Text("${r['town']}\n${r['time']}"), trailing: ElevatedButton(onPressed: (){ launchUrl(Uri.parse("https://maps.google.com/?q=${r['lat']},${r['lng']}"), mode: LaunchMode.externalApplication); }, child: Text("MAP")));
-            }))
-          ]);
+        stream: FirebaseFirestore.instance.collection('reports').snapshots(),
+        builder: (context, snap) {
+          int total = snap.hasData ? snap.data!.docs.length : 0;
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.dashboard, size: 80, color: Colors.blue),
+                const SizedBox(height: 20),
+                Text("TOTAL REPORTS: $total", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                const Text("ScanSafeAfrica - Anti-Fake SA 🇿🇦"),
+                const SizedBox(height: 20),
+                Text("Last update: ${DateTime.now()}"),
+              ],
+            ),
+          );
         },
       ),
     );
