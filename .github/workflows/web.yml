@@ -1,13 +1,11 @@
-name: web.yml
+name: Deploy
 on:
   push:
     branches: [main]
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
