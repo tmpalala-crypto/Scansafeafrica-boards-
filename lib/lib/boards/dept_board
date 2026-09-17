@@ -1,0 +1,51 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class DeptBoard extends StatefulWidget {
+  const DeptBoard({super.key});
+  @override
+  State<DeptBoard> createState() => _DeptBoardState();
+}
+
+class _DeptBoardState extends State<DeptBoard> {
+  String selectedDept = 'HEALTH';
+  final depts = ['HEALTH','CIPC','SARS','VAT','SAPS','NCC'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('$selectedDept DEPARTMENT - Auto Alerts'), backgroundColor: Colors.blue[800]),
+      body: Column(
+        children: [
+          DropdownButton<String>(
+            value: selectedDept,
+            isExpanded: true,
+            items: depts.map((d)=> DropdownMenuItem(value: d, child: Text('$d Profile'))).toList(),
+            onChanged: (v)=> setState(()=> selectedDept=v!),
+          ),
+          Text('AUTO ALERTS for $selectedDept', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('scans').where('departments', arrayContains: selectedDept).snapshots(),
+              builder: (context, snap){
+                if(!snap.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snap.data!.docs;
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c,i){
+                    final d = docs[i].data();
+                    return ListTile(
+                      title: Text('${d['brand']} - ${d['product']}'),
+                      subtitle: Text('Shop: ${d['shop']} | Status: ${d['status']} | Alert: ${d['alertSent']??false}'),
+                      trailing: ElevatedButton(onPressed: (){}, child: Text('Take Action - $selectedDept')),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
