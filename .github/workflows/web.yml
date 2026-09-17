@@ -14,9 +14,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: flutter create . --platforms=web 
       - run: flutter pub get
-      - run: flutter build web --base-href="/Scansafeafrica-boards-/" --release
+      - run: flutter build web --base-href "/Scansafrica-boards-/" --release
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
