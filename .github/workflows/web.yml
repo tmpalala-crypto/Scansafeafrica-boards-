@@ -14,15 +14,14 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: flutter create . --platforms=web
       - run: flutter pub get
-      - run: flutter build web --base-href="/Scansafeafrica-boards/" --release
+      - run: flutter build web --base-href="/Scansafeafrica-boards-/" --release
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
   deploy:
-    needs: build
     runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
