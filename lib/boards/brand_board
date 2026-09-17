@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class BrandBoard extends StatefulWidget {
+  const BrandBoard({super.key});
+  @override
+  State<BrandBoard> createState() => _BrandBoardState();
+}
+
+class _BrandBoardState extends State<BrandBoard> {
+  String selectedBrand = 'KOO'; // Default
+  final List<String> brands = ['KOO','COKE','SASKO','TIGER','LUCKYSTAR','MAQ','SUNLIGHT','COLGATE','SHOPRITE','SPAR','MAIZE','OMO','KNORR','JUNGLE','NESTLE','PEPSI','FANTA','LIPTON','ROBERTSONS','KELLOGGS','BOKOMO','ENTERTAIN','CADBURY','BEACON','SIMBA','LAYS','WHITE STAR','ACE','Tastic','Albany','Blue Ribbon','Sasko','KOO','Clover','Parmalat','Nola','All Gold','Knorrox','Sunlight','Dettol','Dove','Lux','Vaseline','Ponds','Nivea','Huletts','Selati','Iwisa','Spekko','Fattis & Monis'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('$selectedBrand BOARD - Private'), backgroundColor: Colors.green[800]),
+      body: Column(
+        children: [
+          Image.asset('assets/logo.png', height: 50),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DropdownButton<String>(
+              value: selectedBrand,
+              isExpanded: true,
+              items: brands.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+              onChanged: (v) => setState(() => selectedBrand = v!),
+            ),
+          ),
+          Text('Showing ONLY $selectedBrand suspect alerts', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('scans').where('brand', isEqualTo: selectedBrand).snapshots(),
+              builder: (context, snap) {
+                if(!snap.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snap.data!.docs;
+                if(docs.isEmpty) return Center(child: Text('No $selectedBrand alerts yet - Clean! ✅'));
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c,i){
+                    final d = docs[i].data();
+                    return Card(
+                      color: d['status']=='FAKE'? Colors.red[50] : Colors.green[50],
+                      child: ListTile(
+                        leading: Image.asset('assets/logo.png', width: 40),
+                        title: Text('${d['product']} - ${d['status']}'),
+                        subtitle: Text('Shop: ${d['shop']??d['branch']}\nGPS: ${d['gps']??'No GPS'}\nDate: ${d['date']??''}\nSAPS Case: ${d['caseNo']??'None'}'),
+                        trailing: IconButton(icon: const Icon(Icons.map), onPressed: (){}),
+                        onTap: (){
+                          showDialog(context: context, builder: (_)=> AlertDialog(
+                            title: Text('Evidence for ${d['product']}'),
+                            content: Text('Brand: ${d['brand']}\nShop: ${d['shop']}\nLocation: ${d['gps']}\nStatus: ${d['status']}\nPhotos: ${d['evidenceCount']??0} pics\nChain Break: ${d['chainBreak']??false}'),
+                            actions: [TextButton(onPressed: ()=> Navigator.pop(context), child: const Text('Close')), TextButton(onPressed: (){}, child: const Text('Submit to SAPS'))],
+                          ));
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
