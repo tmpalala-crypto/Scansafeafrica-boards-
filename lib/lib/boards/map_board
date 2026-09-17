@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class MapBoard extends StatelessWidget {
+  const MapBoard({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('LIVE SUSPECT MAP - Follow Up'), backgroundColor: Colors.orange[800]),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('scans').where('status', whereIn: ['FAKE','SUSPECT']).snapshots(),
+        builder: (context, snap){
+          if(!snap.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snap.data!.docs;
+          return Column(
+            children: [
+              Container(color: Colors.black, height: 200, child: const Center(child: Text('🗺️ LIVE MAP - Red dots = Fake alerts\nBethelsdorp, PE, JHB, CPT', style: TextStyle(color: Colors.white)))),
+              Text('${docs.length} Suspect Locations - Auto Alert Active', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Expanded(child: ListView.builder(
+                itemCount: docs.length,
+                itemBuilder: (c,i){
+                  final d = docs[i].data();
+                  return Card(child: ListTile(
+                    leading: const Icon(Icons.location_pin, color: Colors.red),
+                    title: Text('${d['brand']} at ${d['shop']}'),
+                    subtitle: Text('GPS: ${d['gps']}\nDate: ${d['date']}\nSAPS Case: ${d['caseNo']??'Not yet'}'),
+                    trailing: const Icon(Icons.warning, color: Colors.red),
+                  ));
+                },
+              )),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
