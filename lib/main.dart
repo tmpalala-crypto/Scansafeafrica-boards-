@@ -1,139 +1,169 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'firebase_options.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try { await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); } catch(e){}
-  runApp(const MyApp());
+  await Firebase.initializeApp();
+  runApp(const ScanSafeAfricaApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ScanSafeAfricaApp extends StatelessWidget {
+  const ScanSafeAfricaApp({super.key});
   @override Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, title: 'ScanSafeAfrica', theme: ThemeData(primarySwatch: Colors.green), home: const MainNav());
+    return MaterialApp(title: 'QINISO Factory', theme: ThemeData(primarySwatch: Colors.green), home: const HomePage());
   }
 }
 
-class MainNav extends StatefulWidget { const MainNav({super.key}); @override State<MainNav> createState() => _MainNavState(); }
-class _MainNavState extends State<MainNav> {
-  int _index=0;
-  final _pages=[const PplScanPage(), const InspectionPage(), const BoardPage()];
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
   @override Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: Drawer(
-        child: ListView(children: [
-            DrawerHeader(decoration: BoxDecoration(color: Colors.green[800]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.verified_user, color: Colors.white, size: 50), SizedBox(height: 8),
-                Text("ScanSafeAfrica", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                Text("Clean Our Country. Stop Fakes.", style: TextStyle(color: Colors.white70, fontSize: 12)),
-            ])),
-            ListTile(leading: Icon(Icons.qr_code_scanner, color: Colors.green), title: Text("PPL SCAN"), onTap: (){ Navigator.pop(context); setState((){_index=0;}); }),
-            ListTile(leading: Icon(Icons.verified_user, color: Colors.orange), title: Text("INSPECTION"), onTap: (){ Navigator.pop(context); setState((){_index=1;}); }),
-            ListTile(leading: Icon(Icons.dashboard, color: Colors.blue), title: Text("BOARD"), onTap: (){ Navigator.pop(context); setState((){_index=2;}); }),
-            Divider(),
-            ListTile(leading: Icon(Icons.flag, color: Colors.green[800]), title: Text("CEO Mission"), subtitle: Text("Fighting fake & xenophobia"), onTap: (){ Navigator.push(context, MaterialPageRoute(builder: (c)=>CEOMissionPage())); }),
-            ListTile(leading: Icon(Icons.shield, color: Colors.orange[800]), title: Text("For Brands - QR Protect"), subtitle: Text("Generate Protected QR"), onTap: (){ Navigator.push(context, MaterialPageRoute(builder: (c)=>BrandProtectionPage())); }),
-        ]),
-      ),
-      body: _pages[_index],
-      bottomNavigationBar: BottomNavigationBar(currentIndex: _index, onTap: (i){ setState((){_index=i;}); }, items: [
-        BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: 'PPL SCAN'),
-        BottomNavigationBarItem(icon: Icon(Icons.verified_user), label: 'INSPECTION'),
-        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'BOARD'),
-      ]),
+    return Scaffold(appBar: AppBar(title: const Text('QINISO - FINAL SYSTEM'), backgroundColor: Colors.green[800]),
+      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const BrandProtectionPage())), child: const Text('1. BRAND - Single QR')),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const QrFactoryPage())), style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: const Text('2. QR FACTORY - Generate 100 QRs + PDF + Spreadsheet', style: TextStyle(color: Colors.white))),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const PplScanPage())), child: const Text('3. CUSTOMER - Just Checking')),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const CashierPage())), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange), child: const Text('4. CASHIER TILL - Confirm Payment (BOSS)')),
+      ])),
     );
   }
 }
 
-class PplScanPage extends StatefulWidget { const PplScanPage({super.key}); @override State<PplScanPage> createState()=> _PplScanPageState(); }
-class _PplScanPageState extends State<PplScanPage> {
-  final brandCtrl=TextEditingController(); final shopCtrl=TextEditingController();
-  String lat=""; String lng=""; String status="Ready"; bool loading=false;
-  Future<void> getLocation() async {
-    setState((){loading=true; status="Getting GPS...";});
-    try{
-      if(!await Geolocator.isLocationServiceEnabled()){setState((){status="Turn ON Location"; loading=false;}); return;}
-      var perm=await Geolocator.checkPermission(); if(perm==LocationPermission.denied){ perm=await Geolocator.requestPermission();}
-      var pos=await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      setState((){lat=pos.latitude.toStringAsFixed(6); lng=pos.longitude.toStringAsFixed(6); status="GPS Locked!"; loading=false;});
-    }catch(e){setState((){status="Error: $e"; loading=false;});}
+// ============ FACTORY PAGE - GENERATE 100 QRS + PDF ============
+class QrFactoryPage extends StatefulWidget { const QrFactoryPage({super.key}); @override State<QrFactoryPage> createState() => _QrFactoryPageState(); }
+
+class _QrFactoryPageState extends State<QrFactoryPage> {
+  final productCtrl = TextEditingController(text: 'MANGO JUICE 500ml');
+  final batchCtrl = TextEditingController(text: 'B001');
+  final branchCtrl = TextEditingController(text: 'SPAR-BETHEL-101');
+  final allocCtrl = TextEditingController(text: 'SPAR Bethelsdorp');
+  final qtyCtrl = TextEditingController(text: '100');
+  final mfgCtrl = TextEditingController(text: '2026-09-01');
+  final expCtrl = TextEditingController(text: '2027-03-01');
+  List<String> generatedIds = [];
+  bool loading = false;
+
+  String genSecret() {
+    final chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    String c = ''; for(int i=0;i<4;i++){ c+= chars[DateTime.now().microsecondsSinceEpoch % 32]; }
+    String c2 = ''; for(int i=0;i<4;i++){ c2+= chars[(DateTime.now().millisecondsSinceEpoch+i*3) % 32]; }
+    final r = DateTime.now().millisecondsSinceEpoch % 9000 + 1000;
+    return 'QIN-${batchCtrl.text}-$c-$c2-$r';
   }
-  Future<void> saveToFirebase() async {
-    if(brandCtrl.text.isEmpty||shopCtrl.text.isEmpty){setState((){status="Fill Brand & Shop!";}); return;}
-    try{
-      await FirebaseFirestore.instance.collection('scans').add({
-        'brand': brandCtrl.text, 'shop': shopCtrl.text, 'lat': lat, 'lng': lng, 'timestamp': FieldValue.serverTimestamp(),
+
+  Future<void> generateFactory() async {
+    setState(()=> loading = true);
+    final qty = int.tryParse(qtyCtrl.text)?? 100;
+    generatedIds = [];
+    final batch = FirebaseFirestore.instance.batch();
+
+    for(int i=0;i<qty;i++){
+      final secret = '${genSecret()}-${i.toString().padLeft(3,'0')}';
+      generatedIds.add(secret);
+      final doc = FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret);
+      batch.set(doc, {
+        'secretId': secret,
+        'brand': 'QINISO',
+        'product': productCtrl.text,
+        'batch': batchCtrl.text,
+        'branchNo': branchCtrl.text,
+        'allocatedTo': allocCtrl.text,
+        'mfgDate': mfgCtrl.text,
+        'expDate': expCtrl.text,
+        'qr_data': secret,
+        'status': 'UNSOLD',
+        'scanCount': 0,
+        'shelfChecks': 0,
+        'factoryIndex': i+1,
+        'created': FieldValue.serverTimestamp(),
       });
-      setState((){status="Saved! Thank you!";}); brandCtrl.clear(); shopCtrl.clear();
-    }catch(e){setState((){status="Error: $e";});}
-  }
-  @override Widget build(BuildContext context){
-    return Scaffold(appBar: AppBar(title: Text("ScanSafeAfrica - PPL SCAN")), body: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-      TextField(controller: brandCtrl, decoration: InputDecoration(labelText: "Brand / Product Name", border: OutlineInputBorder())),
-      SizedBox(height: 10),
-      TextField(controller: shopCtrl, decoration: InputDecoration(labelText: "Shop Name", border: OutlineInputBorder())),
-      SizedBox(height: 10),
-      Row(children: [ElevatedButton(onPressed: getLocation, child: Text(loading?"...":"Get Location")), SizedBox(width: 10), Expanded(child: Text(status))]),
-      SizedBox(height: 10),
-      ElevatedButton(style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50), backgroundColor: Colors.green[800]), onPressed: saveToFirebase, child: Text("SCAN & REPORT", style: TextStyle(color: Colors.white))),
-    ])));
-  }
-}
+      await Future.delayed(const Duration(milliseconds: 2));
+    }
 
-class InspectionPage extends StatelessWidget { const InspectionPage({super.key}); @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: Text("Inspection")), body: Center(child: Text("Inspection - View fake reports"))); } }
-class BoardPage extends StatelessWidget { const BoardPage({super.key}); @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: Text("Board")), body: Center(child: Text("Board - Analytics"))); } }
+    final stockRef = FirebaseFirestore.instance.collection('branch_stock').doc('${branchCtrl.text}_${batchCtrl.text}');
+    batch.set(stockRef, {
+      'branchNo': branchCtrl.text,
+      'batch': batchCtrl.text,
+      'product': productCtrl.text,
+      'mfgDate': mfgCtrl.text,
+      'expDate': expCtrl.text,
+      'totalAllocated': qty,
+      'totalSold': 0,
+      'remaining': qty,
+      'status': 'IN STOCK',
+      'allocatedTo': allocCtrl.text,
+      'created': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-class CEOMissionPage extends StatelessWidget {
-  @override Widget build(BuildContext context){
-    return Scaffold(appBar: AppBar(title: Text("CEO Mission"), backgroundColor: Colors.green[800]), body: SingleChildScrollView(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text("Clean Our Country. Stop Duplicate. Create Jobs.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-      SizedBox(height: 15),
-      Text("We face health problems because of the food we eat. We blame brands and forget that we buy FAKE stuff.\n\nWe need to clean our country and stop duplication. Every product must be registered and all departments need to do their jobs. SSA wants to partner with them on Scan Check, Inspection and Law must do its work.\n\nFIGHTING FAKE, CORRUPTION & XENOPHOBIA:\nFake products make our communities sick and divide us. When kids get sick from spaza shops, we blame each other, but the real enemy is fake compliance.\n\nBOOST ECONOMY & JOBS:\nIf you make a product, you must be accountable - meet all requirements and compliance. That way we create more job opportunities.\n\nPROTECT NEW BRANDS:\nI want new brands to trust the system without being scared of being duplicated and sold cheap, then got blamed and face lawsuits because it's their name product sold but no profit for them.", style: TextStyle(fontSize: 16, height: 1.5)),
-      SizedBox(height: 20),
-      Text("- Qiniso Mark, Founder & CEO, Bethelsdorp", style: TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic)),
-    ])));
+    await batch.commit();
+    setState(()=> loading = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Generated $qty QRs + Saved to Firebase! Now print PDF')));
   }
-}
 
-class BrandProtectionPage extends StatefulWidget { @override State<BrandProtectionPage> createState() => _BrandProtectionPageState(); }
-class _BrandProtectionPageState extends State<BrandProtectionPage> {
-  final brandCtrl=TextEditingController(); final productCtrl=TextEditingController(); final barcodeCtrl=TextEditingController();
-  String generatedQR = "";
-  void generateQR(){
-    if(brandCtrl.text.isEmpty) return;
-    String secret = DateTime.now().millisecondsSinceEpoch.toString();
-    String data = "SSA-VERIFIED|BRAND:${brandCtrl.text}|PROD:${productCtrl.text}|BAR:${barcodeCtrl.text}|ID:$secret";
-    setState((){ generatedQR = data; });
-    FirebaseFirestore.instance.collection('protected_brands').add({
-      'brand': brandCtrl.text, 'product': productCtrl.text, 'barcode': barcodeCtrl.text, 'qr_data': data, 'created': FieldValue.serverTimestamp(),
-    });
+  Future<void> printPdf() async {
+    final pdf = pw.Document();
+    pdf.addPage(pw.MultiPage(pageFormat: PdfPageFormat.a4, build: (ctx){
+      return [
+        pw.Header(level: 0, child: pw.Text('QINISO - ${branchCtrl.text} - Batch ${batchCtrl.text} - ${generatedIds.length} QRs - MFG ${mfgCtrl.text} - INVISIBLE SECRET MODE')),
+        pw.Wrap(children: generatedIds.map((id){
+          return pw.Container(width: 120, height: 150, margin: const pw.EdgeInsets.all(5), padding: const pw.EdgeInsets.all(5), decoration: pw.BoxDecoration(border: pw.Border.all()), child: pw.Column(children: [
+            pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: id, width: 100, height: 100),
+            pw.SizedBox(height: 4),
+            pw.Text(id, style: const pw.TextStyle(fontSize: 5)),
+            pw.Text(branchCtrl.text, style: const pw.TextStyle(fontSize: 5)),
+          ]));
+        }).toList())
+      ];
+    }));
+    await Printing.layoutPdf(onLayout: (f)=> pdf.save());
   }
-  @override Widget build(BuildContext context){
-    return Scaffold(appBar: AppBar(title: Text("Brand QR Protection"), backgroundColor: Colors.orange[800]), body: SingleChildScrollView(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(Icons.shield, size: 70, color: Colors.orange[800]),
-      Text("For Real Brands. Protected QR.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-      SizedBox(height: 10),
-      Text("Generate QR that cannot be copied. If same QR scanned in 2 different towns, system alerts FAKE! Protects you from lawsuit."),
-      SizedBox(height: 20),
-      TextField(controller: brandCtrl, decoration: InputDecoration(labelText: "Brand Name *", border: OutlineInputBorder())),
-      SizedBox(height: 10),
-      TextField(controller: productCtrl, decoration: InputDecoration(labelText: "Product Name", border: OutlineInputBorder())),
-      SizedBox(height: 10),
-      TextField(controller: barcodeCtrl, decoration: InputDecoration(labelText: "Barcode", border: OutlineInputBorder())),
-      SizedBox(height: 20),
-      ElevatedButton(style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50), backgroundColor: Colors.orange[800]), onPressed: generateQR, child: Text("GENERATE PROTECTED QR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-      SizedBox(height: 20),
-      if(generatedQR.isNotEmpty) Center(child: Column(children: [
-        Container(padding: EdgeInsets.all(15), color: Colors.white, child: QrImageView(data: generatedQR, version: QrVersions.auto, size: 230)),
-        SizedBox(height: 10),
-        SelectableText(generatedQR, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.grey)),
-        SizedBox(height: 10),
-        Container(padding: EdgeInsets.all(12), color: Colors.green[50], child: Text("✅ SAVED & PROTECTED!\nNow print this QR on your product. Customer scans with PPL SCAN. If duplicated, app will show WARNING: ALREADY SCANNED ELSEWHERE = FAKE!", style: TextStyle(fontWeight: FontWeight.bold))),
+
+  @override Widget build(BuildContext context) {
+    return Scaffold(appBar: AppBar(title: const Text('QR FACTORY - 100 Print'), backgroundColor: Colors.black),
+      body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [
+        Container(padding: const EdgeInsets.all(8), color: Colors.yellow[100], child: const Text('Factory creates 100 secret IDs, saves to Firebase, creates branch_stock counter, and PDF ready to print. Give spreadsheet to shop to sign - then you are NOT responsible for missing!', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
+        TextField(controller: productCtrl, decoration: const InputDecoration(labelText: 'Product')),
+        TextField(controller: batchCtrl, decoration: const InputDecoration(labelText: 'Batch')),
+        TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch No (e.g SPAR-BETHEL-101)')),
+        TextField(controller: allocCtrl, decoration: const InputDecoration(labelText: 'Allocated To')),
+        Row(children: [Expanded(child: TextField(controller: mfgCtrl, decoration: const InputDecoration(labelText: 'MFG'))), const SizedBox(width:8), Expanded(child: TextField(controller: expCtrl, decoration: const InputDecoration(labelText: 'EXP'))), const SizedBox(width:8), Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Qty')))]),
+        const SizedBox(height:10),
+        SizedBox(width: double.infinity, child: ElevatedButton(onPressed: loading? null : generateFactory, style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: Text(loading? 'Generating...' : 'GENERATE ${qtyCtrl.text} SECRET QRS + SAVE TO FIREBASE', style: const TextStyle(color: Colors.white)))),
+        const SizedBox(height:10),
+        if(generatedIds.isNotEmpty) SizedBox(width: double.infinity, child: ElevatedButton(onPressed: printPdf, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('PRINT PDF - 100 QR SHEET FOR PRINTER'))),
+        const SizedBox(height:10),
+        if(generatedIds.isNotEmpty) Text('Generated ${generatedIds.length} IDs. First: ${generatedIds.first} Last: ${generatedIds.last}', style: const TextStyle(fontSize: 10)),
+        const SizedBox(height:10),
+        if(generatedIds.isNotEmpty) SizedBox(height: 300, child: GridView.builder(gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3), itemCount: generatedIds.take(12).length, itemBuilder: (c,i){ return Card(child: Column(children: [QrImageView(data: generatedIds[i], size: 80), Text(generatedIds[i], style: const TextStyle(fontSize: 5))])) ;})),
       ])),
-    ])));
+    );
   }
 }
+
+// ============ OTHER PAGES (BRAND SINGLE, CUSTOMER, CASHIER) ============
+class BrandProtectionPage extends StatefulWidget { const BrandProtectionPage({super.key}); @override State<BrandProtectionPage> createState() => _BrandProtectionPageState(); }
+class _BrandProtectionPageState extends State<BrandProtectionPage> {
+  final brandCtrl = TextEditingController(text: 'QINISO'); final productCtrl = TextEditingController(text: 'MANGO JUICE 500ml'); final batchCtrl = TextEditingController(text: 'B001'); final branchCtrl = TextEditingController(text: 'SPAR-BETHEL-101'); final allocCtrl = TextEditingController(text: 'SPAR Bethelsdorp'); final mfgCtrl = TextEditingController(text: '2026-09-01'); final expCtrl = TextEditingController(text: '2027-03-01'); String? secretId;
+  String genSecret(){ final chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; String c=''; for(int i=0;i<4;i++){ c+= chars[DateTime.now().microsecondsSinceEpoch % 28]; } String c2=''; for(int i=0;i<4;i++){ c2+= chars[(DateTime.now().millisecondsSinceEpoch+i) % 28]; } final r=DateTime.now().millisecondsSinceEpoch % 9000 + 1000; return 'QIN-${batchCtrl.text}-$c-$c2-$r';}
+  Future<void> generate() async { final secret=genSecret(); setState(()=> secretId=secret); await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).set({'secretId': secret,'brand': brandCtrl.text,'product': productCtrl.text,'batch': batchCtrl.text,'branchNo': branchCtrl.text,'allocatedTo': allocCtrl.text,'mfgDate': mfgCtrl.text,'expDate': expCtrl.text,'qr_data': secret,'status': 'UNSOLD','scanCount': 0,'shelfChecks': 0,'created': FieldValue.serverTimestamp(),});}
+  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('QINISO - Single'), backgroundColor: Colors.black), body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [TextField(controller: brandCtrl, decoration: const InputDecoration(labelText: 'Brand')), TextField(controller: productCtrl, decoration: const InputDecoration(labelText: 'Product')), TextField(controller: batchCtrl, decoration: const InputDecoration(labelText: 'Batch')), TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch No')), TextField(controller: allocCtrl, decoration: const InputDecoration(labelText: 'Allocated To')), Row(children: [Expanded(child: TextField(controller: mfgCtrl, decoration: const InputDecoration(labelText: 'MFG'))), const SizedBox(width:8), Expanded(child: TextField(controller: expCtrl, decoration: const InputDecoration(labelText: 'EXP')))]), const SizedBox(height:10), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: generate, style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: const Text('GENERATE SECRET QR', style: TextStyle(color: Colors.white)))), const SizedBox(height:20), if(secretId!=null)...[Container(padding: const EdgeInsets.all(10), color: Colors.black, child: Text(secretId!, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))), const SizedBox(height:10), QrImageView(data: secretId!, version: QrVersions.auto, size: 220)]])),);}}
+
+class PplScanPage extends StatefulWidget { const PplScanPage({super.key}); @override State<PplScanPage> createState() => _PplScanPageState(); }
+class _PplScanPageState extends State<PplScanPage> { String? result; bool verified=false; Map<String,dynamic>? data; final scanner=MobileScannerController();
+  Future<void> checkSecret(String secret) async { final doc=await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).get(); if(!doc.exists){ setState(()=> result='🚨 SUSPECT - UNKNOWN SECRET'); return;} final d=doc.data()!; final exp=DateTime.tryParse(d['expDate']?? ''); if(exp!=null && DateTime.now().isAfter(exp)){ setState(()=> result='🚨 SUSPECT - EXPIRED MFG ${d['mfgDate']} EXP ${d['expDate']}'); return;} if(d['status']=='SOLD'){ setState(()=> result='🚨 SUSPECT - RECYCLED - Already SOLD at ${d['soldLocation']}'); data=d; return;} await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).update({'shelfChecks': FieldValue.increment(1)}); final stock=await FirebaseFirestore.instance.collection('branch_stock').doc('${d['branchNo']}_${d['batch']}').get(); final remaining=stock.data()?['remaining']?? '?'; setState(()=> verified=true); data=d; result='✅ VERIFIED - Real ${d['brand']} for ${d['branchNo']} MFG ${d['mfgDate']} EXP ${d['expDate']} | $remaining left. Take to till.';}
+  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('Customer - Just Checking')), body: Column(children: [Expanded(child: MobileScanner(controller: scanner, onDetect: (cap){ final code=cap.barcodes.first.rawValue; if(code!=null){ scanner.stop(); checkSecret(code); }})), Container(padding: const EdgeInsets.all(16), color: verified? Colors.green[50]: Colors.red[50], child: Text(result?? 'Scan QINISO secret QR', style: const TextStyle(fontWeight: FontWeight.bold))), if(data!=null) Padding(padding: const EdgeInsets.all(8), child: Text('Branch: ${data!['branchNo']} | Batch ${data!['batch']} | Status ${data!['status']}')), ElevatedButton(onPressed: ()=> scanner.start(), child: const Text('Scan Again')), const SizedBox(height:10)]));}}
+
+class CashierPage extends StatefulWidget { const CashierPage({super.key}); @override State<CashierPage> createState() => _CashierPageState(); }
+class _CashierPageState extends State<CashierPage> { String? result; final scanner=MobileScannerController(); String? _pendingSecret; Map<String,dynamic>? _pendingData;
+  Future<void> tillScan(String secret) async { final docRef=FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret); final doc=await docRef.get(); if(!doc.exists){ setState(()=> result='🚨 SUSPECT - Not in system'); return;} final d=doc.data()!; if(d['status']=='SOLD'){ setState(()=> result='⚠️ Already SOLD - Cannot sell again. Return to shelf!'); return;} setState(()=> result='Ready to sell: ${d['product']} Batch ${d['batch']} Branch ${d['branchNo']} - Confirm payment?'); _pendingSecret=secret; _pendingData=d;}
+  Future<void> confirmPayment() async { if(_pendingSecret==null || _pendingData==null) return; final d=_pendingData!; await FirebaseFirestore.instance.collection('protected_brands_secret').doc(_pendingSecret!).update({'status': 'SOLD', 'soldAt': FieldValue.serverTimestamp(), 'soldLocation': d['branchNo'], 'soldBy': 'TILL-01'}); final stockRef=FirebaseFirestore.instance.collection('branch_stock').doc('${d['branchNo']}_${d['batch']}'); await stockRef.update({'totalSold': FieldValue.increment(1), 'remaining': FieldValue.increment(-1), 'lastSale': FieldValue.serverTimestamp()}); final stock=await stockRef.get(); final rem=stock.data()?['remaining']?? 0; final status=rem <=0? 'SOLD OUT - Reorder Batch ${d['batch']}' : '$rem left'; setState(()=> result='✅ SALE CONFIRMED - ${d['product']} marked SOLD. Branch ${d['branchNo']} now $status'); _pendingSecret=null;}
+  Future<void> returnToShelf() async { if(_pendingSecret==null) return; await FirebaseFirestore.instance.collection('protected_brands_secret').doc(_pendingSecret!).update({'abandonedAtTillCount': FieldValue.increment(1)}); setState(()=> result='↩️ RETURNED TO SHELF - Payment failed/card declined/short money. Stock NOT decreased. Bottle back on shelf.'); _pendingSecret=null;}
+  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('CASHIER TILL - Boss'), backgroundColor: Colors.black), body: Column(children: [Expanded(child: MobileScanner(controller: scanner, onDetect: (cap){ final code=cap.barcodes.first.rawValue; if(code!=null){ scanner.stop(); tillScan(code); }})), Container(padding: const EdgeInsets.all(12), color: Colors.yellow[100], child: Text(result?? 'Cashier: Scan QINISO at till', style: const TextStyle(fontWeight: FontWeight.bold))), if(_pendingSecret!=null) Row(children: [Expanded(child: ElevatedButton(onPressed: confirmPayment, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('✅ CONFIRM PAYMENT'))), const SizedBox(width:8), Expanded(child: ElevatedButton(onPressed: returnToShelf, style: ElevatedButton.styleFrom(backgroundColor: Colors.orange), child: const Text('↩️ RETURN TO SHELF')))]), ElevatedButton(onPressed: ()=> scanner.start(), child: const Text('Scan Next')), const SizedBox(height:10)]));}}
