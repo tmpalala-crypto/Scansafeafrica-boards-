@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class SapsBoard extends StatelessWidget {
+  const SapsBoard({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('SAPS - CASE, PROOF, EVIDENCE'), backgroundColor: Colors.black),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('cases').snapshots(),
+        builder: (context, snap){
+          if(!snap.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snap.data!.docs;
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (c,i){
+              final d = docs[i].data();
+              return Card(
+                color: Colors.grey[200],
+                child: ListTile(
+                  title: Text('CASE ${d['caseNo']} - ${d['brand']}'),
+                  subtitle: Text('Shop: ${d['shop']}\nChain Break: ${d['chainBreak']}\nEvidence: ${d['evidence']}\nStatus: ${d['status']}'),
+                  trailing: ElevatedButton(onPressed: (){}, child: const Text('Submit to Brand + Police')),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(onPressed: (){
+        FirebaseFirestore.instance.collection('cases').add({
+          'caseNo': 'SAPS-${DateTime.now().millisecondsSinceEpoch}',
+          'brand': 'KOO',
+          'shop': 'Spaza Bethelsdorp',
+          'chainBreak': true,
+          'evidence': 'Papers scanned + Stock scanned - Mismatch!',
+          'status': 'OPEN - Auto alert sent to brand',
+          'gps': '-33.92, 25.57',
+          'created': FieldValue.serverTimestamp(),
+        });
+      }, child: const Icon(Icons.add)),
+    );
+  }
+}
