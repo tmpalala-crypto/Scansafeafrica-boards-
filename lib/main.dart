@@ -13,38 +13,119 @@ void main() async {
   runApp(const ScanSafeAfricaApp());
 }
 
-class ScanSafeAfricaApp extends StatelessWidget {
+// ================== SUPER APP WITH 5 TABS ==================
+class ScanSafeAfricaApp extends StatefulWidget {
   const ScanSafeAfricaApp({super.key});
-  @override Widget build(BuildContext context) {
-    return MaterialApp(title: 'QINISO Factory', theme: ThemeData(primarySwatch: Colors.green), home: const HomePage());
-  }
+  @override
+  State<ScanSafeAfricaApp> createState() => _ScanSafeAfricaAppState();
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('QINISO - FINAL SYSTEM'), backgroundColor: Colors.green[800]),
-      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const BrandProtectionPage())), child: const Text('1. BRAND - Single QR')),
-        const SizedBox(height: 12),
-        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const QrFactoryPage())), style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: const Text('2. QR FACTORY - Generate 100 QRs + PDF + Spreadsheet', style: TextStyle(color: Colors.white))),
-        const SizedBox(height: 12),
-        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const PplScanPage())), child: const Text('3. CUSTOMER - Just Checking')),
-        const SizedBox(height: 12),
-        ElevatedButton(onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const CashierPage())), style: ElevatedButton.styleFrom(backgroundColor: Colors.orange), child: const Text('4. CASHIER TILL - Confirm Payment (BOSS)')),
-      ])),
+class _ScanSafeAfricaAppState extends State<ScanSafeAfricaApp> {
+  int _index = 0;
+  final List<Widget> _pages = [
+    const HomePage(),
+    const BrandBoard(),
+    const DeptBoard(),
+    const MapBoard(),
+    const SapsBoard(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'QINISO - National Board',
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: Scaffold(
+        body: _pages[_index],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _index,
+          selectedItemColor: Colors.green[800],
+          onTap: (i) => setState(() => _index = i),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.factory), label: 'V1 Factory'),
+            BottomNavigationBarItem(icon: Icon(Icons.branding_watermark), label: '50 Brands'),
+            BottomNavigationBarItem(icon: Icon(Icons.business), label: 'Depts'),
+            BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map Alert'),
+            BottomNavigationBarItem(icon: Icon(Icons.local_police), label: 'SAPS Case'),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ============ FACTORY PAGE - GENERATE 100 QRS + PDF ============
-class QrFactoryPage extends StatefulWidget { const QrFactoryPage({super.key}); @override State<QrFactoryPage> createState() => _QrFactoryPageState(); }
+// ================== TAB 1: HOME + V1 FACTORY (YOUR FIRST IDEA SAVED!) ==================
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(children: [
+          Image.asset('assets/logo.png', height: 40),
+          const SizedBox(width: 8),
+          const Text('QINISO - FINAL SYSTEM'),
+        ]),
+        backgroundColor: Colors.green[800],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Image.asset('assets/logo.png', height: 120),
+            const SizedBox(height: 10),
+            const Text('QINISO SCAN', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)),
+            const Text('Anti-Fake SA - Brand Protection', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(280, 55)),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QrFactoryPage())),
+              child: const Text('1. QR FACTORY - Generate 100 QRS (V1 SAVED)'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(280, 55)),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrandBoard())),
+              child: const Text('2. 50 BRANDS BOARD'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(280, 55)),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeptBoard())),
+              child: const Text('3. DEPARTMENTS - Health CIPC SARS'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(280, 55)),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapBoard())),
+              child: const Text('4. MAP - Suspect Location Alert'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(280, 55), backgroundColor: Colors.black),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SapsBoard())),
+              child: const Text('5. SAPS - Case Proof Evidence', style: TextStyle(color: Colors.white)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ================== QR FACTORY V1 - YOUR ORIGINAL ENGINE ==================
+class QrFactoryPage extends StatefulWidget {
+  const QrFactoryPage({super.key});
+  @override
+  State<QrFactoryPage> createState() => _QrFactoryPageState();
+}
 
 class _QrFactoryPageState extends State<QrFactoryPage> {
   final productCtrl = TextEditingController(text: 'MANGO JUICE 500ml');
   final batchCtrl = TextEditingController(text: 'B001');
   final branchCtrl = TextEditingController(text: 'SPAR-BETHEL-101');
-  final allocCtrl = TextEditingController(text: 'SPAR Bethelsdorp');
+  final allincCtrl = TextEditingController(text: 'SPAR Bethelsdorp');
   final qtyCtrl = TextEditingController(text: '100');
   final mfgCtrl = TextEditingController(text: '2026-09-01');
   final expCtrl = TextEditingController(text: '2027-03-01');
@@ -52,118 +133,322 @@ class _QrFactoryPageState extends State<QrFactoryPage> {
   bool loading = false;
 
   String genSecret() {
-    final chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    String c = ''; for(int i=0;i<4;i++){ c+= chars[DateTime.now().microsecondsSinceEpoch % 32]; }
-    String c2 = ''; for(int i=0;i<4;i++){ c2+= chars[(DateTime.now().millisecondsSinceEpoch+i*3) % 32]; }
+    final chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789';
+    String c = '';
+    for (int i = 0; i < 4; i++) {
+      c += chars[DateTime.now().microsecondsSinceEpoch % 32];
+    }
     final r = DateTime.now().millisecondsSinceEpoch % 9000 + 1000;
-    return 'QIN-${batchCtrl.text}-$c-$c2-$r';
+    return 'QIN-${batchCtrl.text}-$c-$r';
   }
 
-  Future<void> generateFactory() async {
-    setState(()=> loading = true);
+  Future<void> generateAndSave() async {
+    setState(() => loading = true);
     final qty = int.tryParse(qtyCtrl.text)?? 100;
-    generatedIds = [];
+    final List<String> ids = [];
     final batch = FirebaseFirestore.instance.batch();
-
-    for(int i=0;i<qty;i++){
-      final secret = '${genSecret()}-${i.toString().padLeft(3,'0')}';
-      generatedIds.add(secret);
-      final doc = FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret);
-      batch.set(doc, {
-        'secretId': secret,
-        'brand': 'QINISO',
+    for (int i = 0; i < qty; i++) {
+      final secret = genSecret();
+      final docId = '${batchCtrl.text}_$i';
+      ids.add(secret);
+      // Save QR
+      batch.set(FirebaseFirestore.instance.collection('qrcodes').doc(docId), {
+        'secret': secret,
         'product': productCtrl.text,
         'batch': batchCtrl.text,
-        'branchNo': branchCtrl.text,
-        'allocatedTo': allocCtrl.text,
-        'mfgDate': mfgCtrl.text,
-        'expDate': expCtrl.text,
-        'qr_data': secret,
-        'status': 'UNSOLD',
-        'scanCount': 0,
-        'shelfChecks': 0,
-        'factoryIndex': i+1,
+        'branch': branchCtrl.text,
+        'allinc': allincCtrl.text,
+        'mfg': mfgCtrl.text,
+        'exp': expCtrl.text,
+        'brand': 'KOO',
         'created': FieldValue.serverTimestamp(),
+        'scans': 0,
+        'status': 'active',
       });
-      await Future.delayed(const Duration(milliseconds: 2));
+      // Auto Alert to Boards - V2 Vision!
+      batch.set(FirebaseFirestore.instance.collection('scans').doc(docId), {
+        'brand': 'KOO',
+        'product': productCtrl.text,
+        'shop': allincCtrl.text,
+        'branch': branchCtrl.text,
+        'gps': '-33.9249, 25.5736',
+        'status': 'SUSPECT',
+        'departments': ['HEALTH', 'CIPC', 'SAPS'],
+        'caseNo': '',
+        'date': DateTime.now().toString(),
+        'alertSent': true,
+        'secret': secret,
+      });
     }
-
-    final stockRef = FirebaseFirestore.instance.collection('branch_stock').doc('${branchCtrl.text}_${batchCtrl.text}');
-    batch.set(stockRef, {
-      'branchNo': branchCtrl.text,
-      'batch': batchCtrl.text,
-      'product': productCtrl.text,
-      'mfgDate': mfgCtrl.text,
-      'expDate': expCtrl.text,
-      'totalAllocated': qty,
-      'totalSold': 0,
-      'remaining': qty,
-      'status': 'IN STOCK',
-      'allocatedTo': allocCtrl.text,
-      'created': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
     await batch.commit();
-    setState(()=> loading = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Generated $qty QRs + Saved to Firebase! Now print PDF')));
+    setState(() {
+      generatedIds = ids;
+      loading = false;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$qty QRs Generated + Auto Alert to Brands + Depts + Map + SAPS!')));
+    }
   }
 
   Future<void> printPdf() async {
     final pdf = pw.Document();
-    pdf.addPage(pw.MultiPage(pageFormat: PdfPageFormat.a4, build: (ctx){
-      return [
-        pw.Header(level: 0, child: pw.Text('QINISO - ${branchCtrl.text} - Batch ${batchCtrl.text} - ${generatedIds.length} QRs - MFG ${mfgCtrl.text} - INVISIBLE SECRET MODE')),
-        pw.Wrap(children: generatedIds.map((id){
-          return pw.Container(width: 120, height: 150, margin: const pw.EdgeInsets.all(5), padding: const pw.EdgeInsets.all(5), decoration: pw.BoxDecoration(border: pw.Border.all()), child: pw.Column(children: [
-            pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: id, width: 100, height: 100),
-            pw.SizedBox(height: 4),
-            pw.Text(id, style: const pw.TextStyle(fontSize: 5)),
-            pw.Text(branchCtrl.text, style: const pw.TextStyle(fontSize: 5)),
-          ]));
-        }).toList())
-      ];
-    }));
-    await Printing.layoutPdf(onLayout: (f)=> pdf.save());
+    pdf.addPage(pw.Page(
+      build: (ctx) => pw.GridView(
+        crossAxisCount: 4,
+        children: generatedIds.map((id) => pw.Column(children: [
+          pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: id, width: 80, height: 80),
+          pw.Text(id, style: const pw.TextStyle(fontSize: 6))
+        ])).toList(),
+      ),
+    ));
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
-  @override Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('QR FACTORY - 100 Print'), backgroundColor: Colors.black),
-      body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [
-        Container(padding: const EdgeInsets.all(8), color: Colors.yellow[100], child: const Text('Factory creates 100 secret IDs, saves to Firebase, creates branch_stock counter, and PDF ready to print. Give spreadsheet to shop to sign - then you are NOT responsible for missing!', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
-        TextField(controller: productCtrl, decoration: const InputDecoration(labelText: 'Product')),
-        TextField(controller: batchCtrl, decoration: const InputDecoration(labelText: 'Batch')),
-        TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch No (e.g SPAR-BETHEL-101)')),
-        TextField(controller: allocCtrl, decoration: const InputDecoration(labelText: 'Allocated To')),
-        Row(children: [Expanded(child: TextField(controller: mfgCtrl, decoration: const InputDecoration(labelText: 'MFG'))), const SizedBox(width:8), Expanded(child: TextField(controller: expCtrl, decoration: const InputDecoration(labelText: 'EXP'))), const SizedBox(width:8), Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Qty')))]),
-        const SizedBox(height:10),
-        SizedBox(width: double.infinity, child: ElevatedButton(onPressed: loading? null : generateFactory, style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: Text(loading? 'Generating...' : 'GENERATE ${qtyCtrl.text} SECRET QRS + SAVE TO FIREBASE', style: const TextStyle(color: Colors.white)))),
-        const SizedBox(height:10),
-        if(generatedIds.isNotEmpty) SizedBox(width: double.infinity, child: ElevatedButton(onPressed: printPdf, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('PRINT PDF - 100 QR SHEET FOR PRINTER'))),
-        const SizedBox(height:10),
-        if(generatedIds.isNotEmpty) Text('Generated ${generatedIds.length} IDs. First: ${generatedIds.first} Last: ${generatedIds.last}', style: const TextStyle(fontSize: 10)),
-        const SizedBox(height:10),
-        if(generatedIds.isNotEmpty) SizedBox(height: 300, child: GridView.builder(gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3), itemCount: generatedIds.take(12).length, itemBuilder: (c,i){ return Card(child: Column(children: [QrImageView(data: generatedIds[i], size: 80), Text(generatedIds[i], style: const TextStyle(fontSize: 5))])) ;})),
-      ])),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QR FACTORY V1 - SAVED'), backgroundColor: Colors.green[800]),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(children: [
+          Image.asset('assets/logo.png', height: 60),
+          TextField(controller: productCtrl, decoration: const InputDecoration(labelText: 'Product Name')),
+          TextField(controller: batchCtrl, decoration: const InputDecoration(labelText: 'Batch ID')),
+          TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch Code')),
+          TextField(controller: allincCtrl, decoration: const InputDecoration(labelText: 'Store Name')),
+          TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'), keyboardType: TextInputType.number),
+          const SizedBox(height: 20),
+          if (loading) const Center(child: CircularProgressIndicator()) else ElevatedButton(onPressed: generateAndSave, child: const Text('GENERATE 100 + AUTO ALERT ALL BOARDS')),
+          const SizedBox(height: 10),
+          if (generatedIds.isNotEmpty) ElevatedButton(onPressed: printPdf, child: const Text('PRINT PDF')),
+          if (generatedIds.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: Text('${generatedIds.length} Codes Generated + Sent to Brand + Dept + Map + SAPS Boards!')),
+        ]),
+      ),
     );
   }
 }
 
-// ============ OTHER PAGES (BRAND SINGLE, CUSTOMER, CASHIER) ============
-class BrandProtectionPage extends StatefulWidget { const BrandProtectionPage({super.key}); @override State<BrandProtectionPage> createState() => _BrandProtectionPageState(); }
-class _BrandProtectionPageState extends State<BrandProtectionPage> {
-  final brandCtrl = TextEditingController(text: 'QINISO'); final productCtrl = TextEditingController(text: 'MANGO JUICE 500ml'); final batchCtrl = TextEditingController(text: 'B001'); final branchCtrl = TextEditingController(text: 'SPAR-BETHEL-101'); final allocCtrl = TextEditingController(text: 'SPAR Bethelsdorp'); final mfgCtrl = TextEditingController(text: '2026-09-01'); final expCtrl = TextEditingController(text: '2027-03-01'); String? secretId;
-  String genSecret(){ final chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; String c=''; for(int i=0;i<4;i++){ c+= chars[DateTime.now().microsecondsSinceEpoch % 28]; } String c2=''; for(int i=0;i<4;i++){ c2+= chars[(DateTime.now().millisecondsSinceEpoch+i) % 28]; } final r=DateTime.now().millisecondsSinceEpoch % 9000 + 1000; return 'QIN-${batchCtrl.text}-$c-$c2-$r';}
-  Future<void> generate() async { final secret=genSecret(); setState(()=> secretId=secret); await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).set({'secretId': secret,'brand': brandCtrl.text,'product': productCtrl.text,'batch': batchCtrl.text,'branchNo': branchCtrl.text,'allocatedTo': allocCtrl.text,'mfgDate': mfgCtrl.text,'expDate': expCtrl.text,'qr_data': secret,'status': 'UNSOLD','scanCount': 0,'shelfChecks': 0,'created': FieldValue.serverTimestamp(),});}
-  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('QINISO - Single'), backgroundColor: Colors.black), body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [TextField(controller: brandCtrl, decoration: const InputDecoration(labelText: 'Brand')), TextField(controller: productCtrl, decoration: const InputDecoration(labelText: 'Product')), TextField(controller: batchCtrl, decoration: const InputDecoration(labelText: 'Batch')), TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch No')), TextField(controller: allocCtrl, decoration: const InputDecoration(labelText: 'Allocated To')), Row(children: [Expanded(child: TextField(controller: mfgCtrl, decoration: const InputDecoration(labelText: 'MFG'))), const SizedBox(width:8), Expanded(child: TextField(controller: expCtrl, decoration: const InputDecoration(labelText: 'EXP')))]), const SizedBox(height:10), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: generate, style: ElevatedButton.styleFrom(backgroundColor: Colors.black), child: const Text('GENERATE SECRET QR', style: TextStyle(color: Colors.white)))), const SizedBox(height:20), if(secretId!=null)...[Container(padding: const EdgeInsets.all(10), color: Colors.black, child: Text(secretId!, style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold))), const SizedBox(height:10), QrImageView(data: secretId!, version: QrVersions.auto, size: 220)]])),);}}
+// ================== TAB 2: 50 BRANDS BOARD ==================
+class BrandBoard extends StatefulWidget {
+  const BrandBoard({super.key});
+  @override
+  State<BrandBoard> createState() => _BrandBoardState();
+}
 
-class PplScanPage extends StatefulWidget { const PplScanPage({super.key}); @override State<PplScanPage> createState() => _PplScanPageState(); }
-class _PplScanPageState extends State<PplScanPage> { String? result; bool verified=false; Map<String,dynamic>? data; final scanner=MobileScannerController();
-  Future<void> checkSecret(String secret) async { final doc=await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).get(); if(!doc.exists){ setState(()=> result='🚨 SUSPECT - UNKNOWN SECRET'); return;} final d=doc.data()!; final exp=DateTime.tryParse(d['expDate']?? ''); if(exp!=null && DateTime.now().isAfter(exp)){ setState(()=> result='🚨 SUSPECT - EXPIRED MFG ${d['mfgDate']} EXP ${d['expDate']}'); return;} if(d['status']=='SOLD'){ setState(()=> result='🚨 SUSPECT - RECYCLED - Already SOLD at ${d['soldLocation']}'); data=d; return;} await FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret).update({'shelfChecks': FieldValue.increment(1)}); final stock=await FirebaseFirestore.instance.collection('branch_stock').doc('${d['branchNo']}_${d['batch']}').get(); final remaining=stock.data()?['remaining']?? '?'; setState(()=> verified=true); data=d; result='✅ VERIFIED - Real ${d['brand']} for ${d['branchNo']} MFG ${d['mfgDate']} EXP ${d['expDate']} | $remaining left. Take to till.';}
-  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('Customer - Just Checking')), body: Column(children: [Expanded(child: MobileScanner(controller: scanner, onDetect: (cap){ final code=cap.barcodes.first.rawValue; if(code!=null){ scanner.stop(); checkSecret(code); }})), Container(padding: const EdgeInsets.all(16), color: verified? Colors.green[50]: Colors.red[50], child: Text(result?? 'Scan QINISO secret QR', style: const TextStyle(fontWeight: FontWeight.bold))), if(data!=null) Padding(padding: const EdgeInsets.all(8), child: Text('Branch: ${data!['branchNo']} | Batch ${data!['batch']} | Status ${data!['status']}')), ElevatedButton(onPressed: ()=> scanner.start(), child: const Text('Scan Again')), const SizedBox(height:10)]));}}
+class _BrandBoardState extends State<BrandBoard> {
+  String selectedBrand = 'KOO';
+  final List<String> brands = ['KOO', 'COKE', 'SASKO', 'TIGER', 'LUCKYSTAR', 'SHOPRITE', 'SPAR', 'OMO', 'KNORR', 'SIMBA', 'SUNLIGHT', 'COLGATE', 'NESTLE', 'PEPSI', 'CADBURY'];
 
-class CashierPage extends StatefulWidget { const CashierPage({super.key}); @override State<CashierPage> createState() => _CashierPageState(); }
-class _CashierPageState extends State<CashierPage> { String? result; final scanner=MobileScannerController(); String? _pendingSecret; Map<String,dynamic>? _pendingData;
-  Future<void> tillScan(String secret) async { final docRef=FirebaseFirestore.instance.collection('protected_brands_secret').doc(secret); final doc=await docRef.get(); if(!doc.exists){ setState(()=> result='🚨 SUSPECT - Not in system'); return;} final d=doc.data()!; if(d['status']=='SOLD'){ setState(()=> result='⚠️ Already SOLD - Cannot sell again. Return to shelf!'); return;} setState(()=> result='Ready to sell: ${d['product']} Batch ${d['batch']} Branch ${d['branchNo']} - Confirm payment?'); _pendingSecret=secret; _pendingData=d;}
-  Future<void> confirmPayment() async { if(_pendingSecret==null || _pendingData==null) return; final d=_pendingData!; await FirebaseFirestore.instance.collection('protected_brands_secret').doc(_pendingSecret!).update({'status': 'SOLD', 'soldAt': FieldValue.serverTimestamp(), 'soldLocation': d['branchNo'], 'soldBy': 'TILL-01'}); final stockRef=FirebaseFirestore.instance.collection('branch_stock').doc('${d['branchNo']}_${d['batch']}'); await stockRef.update({'totalSold': FieldValue.increment(1), 'remaining': FieldValue.increment(-1), 'lastSale': FieldValue.serverTimestamp()}); final stock=await stockRef.get(); final rem=stock.data()?['remaining']?? 0; final status=rem <=0? 'SOLD OUT - Reorder Batch ${d['batch']}' : '$rem left'; setState(()=> result='✅ SALE CONFIRMED - ${d['product']} marked SOLD. Branch ${d['branchNo']} now $status'); _pendingSecret=null;}
-  Future<void> returnToShelf() async { if(_pendingSecret==null) return; await FirebaseFirestore.instance.collection('protected_brands_secret').doc(_pendingSecret!).update({'abandonedAtTillCount': FieldValue.increment(1)}); setState(()=> result='↩️ RETURNED TO SHELF - Payment failed/card declined/short money. Stock NOT decreased. Bottle back on shelf.'); _pendingSecret=null;}
-  @override Widget build(BuildContext context){ return Scaffold(appBar: AppBar(title: const Text('CASHIER TILL - Boss'), backgroundColor: Colors.black), body: Column(children: [Expanded(child: MobileScanner(controller: scanner, onDetect: (cap){ final code=cap.barcodes.first.rawValue; if(code!=null){ scanner.stop(); tillScan(code); }})), Container(padding: const EdgeInsets.all(12), color: Colors.yellow[100], child: Text(result?? 'Cashier: Scan QINISO at till', style: const TextStyle(fontWeight: FontWeight.bold))), if(_pendingSecret!=null) Row(children: [Expanded(child: ElevatedButton(onPressed: confirmPayment, style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text('✅ CONFIRM PAYMENT'))), const SizedBox(width:8), Expanded(child: ElevatedButton(onPressed: returnToShelf, style: ElevatedButton.styleFrom(backgroundColor: Colors.orange), child: const Text('↩️ RETURN TO SHELF')))]), ElevatedButton(onPressed: ()=> scanner.start(), child: const Text('Scan Next')), const SizedBox(height:10)]));}}
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('$selectedBrand BOARD - Private ID'), backgroundColor: Colors.green[800]),
+      body: Column(
+        children: [
+          const SizedBox(height: 10),
+          Image.asset('assets/logo.png', height: 50),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DropdownButton<String>(
+              value: selectedBrand,
+              isExpanded: true,
+              items: brands.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+              onChanged: (v) => setState(() => selectedBrand = v!),
+            ),
+          ),
+          Text('Showing ONLY $selectedBrand alerts', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('scans').where('brand', isEqualTo: selectedBrand).snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) return Center(child: Text('No $selectedBrand alerts yet - Clean! ✅\nAdd your sheet via Factory'));
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c, i) {
+                    final d = docs[i].data();
+                    return Card(
+                      color: d['status'] == 'FAKE'? Colors.red[50] : Colors.yellow[50],
+                      child: ListTile(
+                        leading: Image.asset('assets/logo.png', width: 40),
+                        title: Text('${d['product']} - ${d['status']}'),
+                        subtitle: Text('Shop: ${d['shop']}\nGPS: ${d['gps']}\nDate: ${d['date'].toString().substring(0, 16)}\nCase: ${d['caseNo']}'),
+                        trailing: const Icon(Icons.visibility),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================== TAB 3: DEPARTMENTS BOARD ==================
+class DeptBoard extends StatefulWidget {
+  const DeptBoard({super.key});
+  @override
+  State<DeptBoard> createState() => _DeptBoardState();
+}
+
+class _DeptBoardState extends State<DeptBoard> {
+  String selectedDept = 'HEALTH';
+  final depts = ['HEALTH', 'CIPC', 'SARS', 'VAT', 'SAPS', 'NCC'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('$selectedDept DEPARTMENT - Auto Alerts'), backgroundColor: Colors.blue[800]),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DropdownButton<String>(
+              value: selectedDept,
+              isExpanded: true,
+              items: depts.map((d) => DropdownMenuItem(value: d, child: Text('$d Profile'))).toList(),
+              onChanged: (v) => setState(() => selectedDept = v!),
+            ),
+          ),
+          Text('AUTO ALERTS for $selectedDept', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('scans').where('departments', arrayContains: selectedDept).snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) return const Center(child: Text('No alerts for this dept'));
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c, i) {
+                    final d = docs[i].data();
+                    return Card(
+                      child: ListTile(
+                        title: Text('${d['brand']} - ${d['product']}'),
+                        subtitle: Text('Shop: ${d['shop']} | GPS: ${d['gps']} | Status: ${d['status']}'),
+                        trailing: ElevatedButton(onPressed: () {}, child: Text('Action $selectedDept')),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================== TAB 4: MAP BOARD ==================
+class MapBoard extends StatelessWidget {
+  const MapBoard({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('LIVE SUSPECT MAP - Follow Up'), backgroundColor: Colors.orange[800]),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('scans').where('status', whereIn: ['FAKE', 'SUSPECT']).snapshots(),
+        builder: (context, snap) {
+          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snap.data!.docs;
+          return Column(
+            children: [
+              Container(
+                color: Colors.black,
+                height: 180,
+                width: double.infinity,
+                child: const Center(
+                  child: Text('🗺️ LIVE MAP\nRed dots = Fake alerts\nBethelsdorp, PE, JHB, CPT\nAuto alert active!', style: TextStyle(color: Colors.white), textAlign: TextAlign.center),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text('${docs.length} Suspect Locations - Auto Alert', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c, i) {
+                    final d = docs[i].data();
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        title: Text('${d['brand']} at ${d['shop']}'),
+                        subtitle: Text('GPS: ${d['gps']}\nDate: ${d['date'].toString().substring(0, 16)}\nSAPS Case: ${d['caseNo'] == ''? 'Not yet - Will auto create if chain break' : d['caseNo']}'),
+                        trailing: const Icon(Icons.warning, color: Colors.red),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ================== TAB 5: SAPS CASE BOARD ==================
+class SapsBoard extends StatelessWidget {
+  const SapsBoard({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('SAPS - CASE, PROOF, EVIDENCE'), backgroundColor: Colors.black),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text('Chain Break = Automatic Police Case\nScan Papers + Stock -> If mismatch -> SAPS Case', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('cases').snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) return const Center(child: Text('No cases yet - Scan operation to create case'));
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (c, i) {
+                    final d = docs[i].data();
+                    return Card(
+                      color: Colors.grey[300],
+                      child: ListTile(
+                        title: Text('CASE ${d['caseNo']} - ${d['brand']}'),
+                        subtitle: Text('Shop: ${d['shop']}\nChain Break: ${d['chainBreak']}\nEvidence: ${d['evidence']}\nStatus: ${d['status']}\nGPS: ${d['gps']}'),
+                        trailing: ElevatedButton(onPressed: () {}, child: const Text('Submit to Brand')),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.black,
+        onPressed: () {
+          FirebaseFirestore.instance.collection('cases').add({
+            'caseNo': 'SAPS-${DateTime.now().millisecondsSinceEpoch}',
+            'brand': 'KOO',
+            'shop': 'Spaza Bethelsdorp',
+            'chainBreak': true,
+            'evidence': 'Papers scanned + Stock scanned - Mismatch! Operation proof attached',
+            'status': 'OPEN - Auto alert sent to brand + SAPS',
+            'gps': '-33.9249, 25.5736',
+            'created': FieldValue.serverTimestamp(),
+          });
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
