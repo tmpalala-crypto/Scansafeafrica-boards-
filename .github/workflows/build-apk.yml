@@ -15,7 +15,7 @@ jobs:
         with:
           channel: stable
       - run: rm -rf android
-      - run: flutter create. --platforms=android
+      - run: flutter create . --platforms=android
       - name: Force upgrade mobile_scanner and compileSdk
         run: |
           sed -i 's/mobile_scanner:.*/mobile_scanner: ^6.0.0/' pubspec.yaml || true
