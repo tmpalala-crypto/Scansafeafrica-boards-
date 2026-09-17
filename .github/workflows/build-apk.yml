@@ -15,8 +15,15 @@ jobs:
         with:
           channel: stable
       - run: rm -rf android
-      - run: flutter create . --platforms=android
-      - run: flutter pub upgrade
+      - run: flutter create. --platforms=android
+      - name: Force upgrade mobile_scanner and compileSdk
+        run: |
+          sed -i 's/mobile_scanner:.*/mobile_scanner: ^6.0.0/' pubspec.yaml || true
+          sed -i 's/flutter.compileSdkVersion/34/g' android/app/build.gradle || true
+          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' android/app/build.gradle || true
+          sed -i 's/compileSdk 33/compileSdk 34/g' android/app/build.gradle || true
+          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/g' android/app/build.gradle || true
+      - run: flutter pub upgrade --major-versions
       - run: flutter pub get
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
