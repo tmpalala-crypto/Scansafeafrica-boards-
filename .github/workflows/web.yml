@@ -17,6 +17,12 @@ jobs:
       - run: flutter create. --platforms=web
       - run: flutter pub get
       - run: flutter build web --base-href "/Scansafrica-boards-/" --release
+      - run: |
+          cp assets/logo.png build/web/icons/Icon-192.png
+          cp assets/logo.png build/web/icons/Icon-512.png
+          cp assets/logo.png build/web/icons/Icon-maskable-192.png
+          cp assets/logo.png build/web/icons/Icon-maskable-512.png
+          cp assets/logo.png build/web/favicon.png
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
